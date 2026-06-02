@@ -8,4 +8,5 @@ pydantic-settings>=2.3
 python-dotenv>=1.0
 python-multipart>=0.0.9
 jinja2>=3.1
-# RAG 检索库待方案确定后添加（rank-bm25 / scikit-learn / sentence-transformers 之一）
+rank-bm25>=0.2.2          # 零依赖检索兜底（阶段2）
+# 语义检索的重依赖见 requirements-rag.txt（sentence-transformers，阶段2 再装）

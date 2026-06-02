@@ -1,0 +1,11 @@
+id,subject,body,requester,gold_category,gold_priority,gold_ticket_type,gold_kb_hit
+T001,"Can't log in - account locked","I tried my password too many times this morning and now I'm locked out of my laptop and email. Can you unlock my account? I have a client call in 30 minutes.",alice@contoso-lab.com,account_access,high,incident,KB001
+T002,"New hire setup - Maria Chen","We have a new hire, Maria Chen, starting Monday in Sales. Please create her account, add her to the Sales distribution group, and assign an Office license.",manager@contoso-lab.com,account_access,medium,request,
+T003,"VPN keeps disconnecting","Since the update yesterday my VPN drops every few minutes when I work from home. I tried reconnecting several times, no luck.",bob@contoso-lab.com,network,medium,incident,KB002
+T004,"Outlook not syncing","My Outlook desktop hasn't received any new mail since last night, but webmail works fine. Restarting Outlook didn't help.",carol@contoso-lab.com,email,medium,incident,KB003
+T005,"Request: install Adobe Acrobat Pro","Could you please install Adobe Acrobat Pro on my workstation? I need to edit PDFs for the quarterly finance report.",dave@contoso-lab.com,software,medium,request,KB004
+T006,"Suspicious email asking for my password","I received an email pretending to be IT, asking me to verify my password through a link. I did not click it. Reporting it just in case.",erin@contoso-lab.com,security,high,incident,KB006
+T007,"3rd floor printer not working","The big printer near the kitchen shows a paper jam error but there is no paper stuck. Nobody on the floor can print right now.",frank@contoso-lab.com,hardware,medium,incident,KB005
+T008,"Reset my password please","I forgot my password over the long weekend, can you reset it when you get a chance? Not urgent.",grace@contoso-lab.com,account_access,low,request,KB001
+T009,"Whole office internet is down","Nobody in the London office can connect to anything, the internet appears to be completely down. This is blocking the entire team.",helpdesk@contoso-lab.com,network,critical,incident,KB002
+T010,"Add me to the Marketing shared mailbox","Please grant me access to the Marketing shared mailbox so I can handle incoming campaign replies.",ivan@contoso-lab.com,email,low,request,KB003

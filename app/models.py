@@ -42,4 +42,10 @@ class Classification(BaseModel):
     )
     confidence: float = Field(ge=0.0, le=1.0, default=0.5)
     reasoning: str = ""
-    source: str = "mock"   # "mock"(规则基线) 或 "claude"
+    source: str = "mock"   # "mock"(规则基线) / "claude" / "claude-fallback"
+
+
+class TriageItem(BaseModel):
+    """一条工单 + 它的分类结果（批量接口返回用）。"""
+    ticket: Ticket
+    classification: Classification

@@ -1,9 +1,10 @@
-"""FastAPI 入口。阶段 0：健康检查 + 规则基线分类，已可跑。"""
-from fastapi import FastAPI
+"""FastAPI 入口。阶段 1：健康检查 + 单条/批量/CSV 分类。"""
+from fastapi import FastAPI, File, UploadFile
 
 from .classifier import classify
 from .config import get_settings
-from .models import Classification, Ticket
+from .data_io import load_tickets_csv, parse_tickets_bytes
+from .models import Classification, Ticket, TriageItem
 
 app = FastAPI(
     title="L1 HelpDesk Copilot (lab / 作品)",
@@ -25,5 +26,18 @@ def healthz() -> dict:
 
 @app.post("/classify", response_model=Classification)
 def classify_endpoint(ticket: Ticket) -> Classification:
-    """对一条工单分类（阶段 0 走规则基线）。"""
+    """对粘贴的一条工单分类。"""
     return classify(ticket)
+
+
+@app.get("/classify/sample", response_model=list[TriageItem])
+def classify_sample() -> list[TriageItem]:
+    """对内置样例 CSV 的每条工单分类。"""
+    return [TriageItem(ticket=t, classification=classify(t)) for t in load_tickets_csv()]
+
+
+@app.post("/ingest/csv", response_model=list[TriageItem])
+async def ingest_csv(file: UploadFile = File(...)) -> list[TriageItem]:
+    """上传一个工单 CSV（列 id,subject,body,requester），逐条分类。"""
+    tickets = parse_tickets_bytes(await file.read())
+    return [TriageItem(ticket=t, classification=classify(t)) for t in tickets]

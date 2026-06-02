@@ -6,8 +6,20 @@
 
 `classify()` 按 settings.use_mock_llm 分流。
 """
+from anthropic import Anthropic
+
 from .config import get_settings
 from .models import Category, Classification, Priority, Ticket, TicketType
+
+# KB 目录：id -> 标题。分类提示词 + 阶段2 的 RAG 都会用到（届时和 kb/ 下文件对齐）。
+KB_CATALOG: dict[str, str] = {
+    "KB001": "Password reset & account unlock",
+    "KB002": "VPN & WiFi connectivity",
+    "KB003": "Email / Outlook / distribution & shared mailboxes",
+    "KB004": "Software install & licensing",
+    "KB005": "Hardware (laptop / monitor / printer / peripherals)",
+    "KB006": "Security: phishing & suspicious activity",
+}
 
 # --- 关键词表（规则基线用，刻意保持简单） ---
 _CATEGORY_KEYWORDS: dict[Category, list[str]] = {
@@ -86,9 +98,90 @@ def rule_based_classify(ticket: Ticket) -> Classification:
     )
 
 
+# --- Claude 结构化分类（用 tool use 强制结构化输出） ---
+_CLASSIFY_TOOL = {
+    "name": "record_classification",
+    "description": "记录一条 IT 支持工单的结构化分类结果。",
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "category": {"type": "string", "enum": [c.value for c in Category]},
+            "priority": {"type": "string", "enum": [p.value for p in Priority]},
+            "ticket_type": {"type": "string", "enum": [t.value for t in TicketType]},
+            "kb_hit": {
+                "type": "string",
+                "description": "最匹配的 KB id（如 KB001）；若无文章契合则填 'NONE'。",
+            },
+            "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+            "reasoning": {"type": "string", "description": "一句话分类理由。"},
+        },
+        "required": ["category", "priority", "ticket_type", "kb_hit", "confidence"],
+    },
+}
+
+_SYSTEM_TEMPLATE = (
+    "You are an L1 IT help desk triage assistant. Classify the ticket and call the "
+    "record_classification tool. Definitions: 'incident' = something is broken or not "
+    "working; 'request' = the user wants a new service, access, or item. "
+    "Priority: critical = widespread outage or active security breach; high = a single "
+    "user fully blocked, an urgent deadline, or a phishing/security report; medium = "
+    "normal degraded service; low = minor or no urgency. "
+    "Set kb_hit to the single best-matching KB id, or 'NONE' if no article fits.\n\n"
+    "Knowledge base:\n{catalog}"
+)
+
+_client: Anthropic | None = None
+
+
+def _get_client() -> Anthropic:
+    global _client
+    if _client is None:
+        _client = Anthropic(api_key=get_settings().anthropic_api_key)
+    return _client
+
+
 def llm_classify(ticket: Ticket) -> Classification:
-    """阶段 1 接入 Claude 结构化分类。"""
-    raise NotImplementedError("阶段 1 实现：调用 Anthropic SDK 做结构化分类。")
+    """调用 Claude（tool use）做结构化分类；解析失败则回落到规则基线。"""
+    s = get_settings()
+    catalog = "\n".join(f"{kid}: {title}" for kid, title in KB_CATALOG.items())
+    resp = _get_client().messages.create(
+        model=s.classify_model,
+        max_tokens=400,
+        system=_SYSTEM_TEMPLATE.format(catalog=catalog),
+        tools=[_CLASSIFY_TOOL],
+        tool_choice={"type": "tool", "name": "record_classification"},
+        messages=[{
+            "role": "user",
+            "content": f"Subject: {ticket.subject}\n\nBody:\n{ticket.body}",
+        }],
+    )
+    data = next(
+        (b.input for b in resp.content
+         if b.type == "tool_use" and b.name == "record_classification"),
+        None,
+    )
+    if not data:
+        fb = rule_based_classify(ticket)
+        fb.source = "claude-fallback"
+        return fb
+
+    kb = data.get("kb_hit")
+    if kb in (None, "", "NONE", "none"):
+        kb = None
+    try:
+        return Classification(
+            category=data["category"],
+            priority=data["priority"],
+            ticket_type=data["ticket_type"],
+            kb_hit=kb,
+            confidence=float(data.get("confidence", 0.6)),
+            reasoning=data.get("reasoning", ""),
+            source="claude",
+        )
+    except Exception:  # 枚举越界等 → 回落
+        fb = rule_based_classify(ticket)
+        fb.source = "claude-fallback"
+        return fb
 
 
 def classify(ticket: Ticket) -> Classification:
