@@ -1,19 +1,28 @@
-# M365 开发者租户 + Graph 应用注册（逐步指南）
+# Entra / M365 lab 租户 + Graph 应用注册（逐步指南）
 
-> ⚠️ **只在免费的开发者/测试租户上做。** 用 `*.onmicrosoft.com` 的测试用户。
+> ⚠️ **只在免费的测试租户上做。** 用 `*.onmicrosoft.com` 的测试用户。
 > client secret 只放进 `.env`（已被 `.gitignore` 忽略），**绝不提交、绝不用生产租户**。
 > 全程保持 `GRAPH_DRY_RUN=true`，等你亲眼确认请求无误，再切 `false` 真正执行。
 
-整个过程约 15–20 分钟。完成后，应用就能在你的 lab 租户里真的建用户/重置密码/加组/分配许可。
+整个过程约 15–20 分钟。完成后，应用就能在你的 lab 租户里真的**建用户 / 重置密码 / 加入组**。
 
 ---
 
-## 1) 拿一个免费的 M365 开发者租户
-1. 打开 **https://developer.microsoft.com/microsoft-365/dev-program** ，用个人邮箱登录并加入（Join now）。
-2. 按提示 **Set up E5 sandbox**（会给你一个带 25 个示例用户的 E5 测试租户）。
-3. 记下你的管理员账号 `admin@<something>.onmicrosoft.com` 和租户域名 `<something>.onmicrosoft.com`。
+## 1) 建一个免费的 Microsoft Entra (Azure AD) 租户
+> **2026 现状**：免费 E5 开发者沙箱已限定 Visual Studio 订阅 / 微软合作伙伴；普通人走
+> **免费 Entra 租户**最省事。它免费（绑卡仅验证身份、**不扣费**），足以真跑
+> **建用户 / 改密 / 加组**——这三个是纯 Entra 操作，无需任何 M365 许可。
+> `assign_license`（分配许可）因免费租户没有付费 SKU，继续保持 dry-run。
 
-> 注：微软偶尔调整该计划的资格要求。若 sandbox 入口不可用，可改用 **Microsoft 365 E5 / Business 免费试用** 建一个测试租户，后续步骤完全一样。拿不准时把你看到的页面发我，我帮你判断走哪条路。
+1. 用任意微软账号登录 **https://entra.microsoft.com**
+2. 左侧 **Identity → Overview → Manage tenants → ＋ Create**
+3. Tenant type 选 **Microsoft Entra ID** → Next
+4. 填 **Organization name**、**Initial domain name**（→ `<你的域名>.onmicrosoft.com`）、
+   **Country/Region** → **Review + create**（首次可能要求手机/信用卡验证身份——不扣费）
+5. 创建完成后，右上角**切换到这个新租户**，记下租户域名 `<xxx>.onmicrosoft.com`。
+
+> 想让 `assign_license` 也真跑？可临时开一个 M365 E5 / Entra ID P2 免费试用（绑卡、记得取消），
+> 后续步骤完全一样，只是多了可分配的 SKU。本作品默认不需要。
 
 ## 2) 注册一个应用（拿 client id / secret）
 进入 **https://entra.microsoft.com** → 用管理员账号登录 → 左侧 **Identity → Applications → App registrations**：
