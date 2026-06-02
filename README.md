@@ -37,8 +37,11 @@ uvicorn app.main:app --reload
 - [x] 阶段 1 · Claude 结构化分类 + CSV 导入
 - [x] 阶段 2 · KB + RAG 带引用回复
 - [x] 阶段 3 · 50 条标注测试集 + 评测脚本（`python -m eval.run_eval`）
-- [x] 阶段 4 · Microsoft Graph 账号动作（默认 dry-run）+ 审计日志 → 配置见 [`docs/m365-setup.md`](docs/m365-setup.md)
+- [x] 阶段 4 · Microsoft Graph 账号动作 + 审计日志 → 配置见 [`docs/m365-setup.md`](docs/m365-setup.md)
+  - **已在真实免费 Entra 租户 live 验证**：`create_user → 201` · `reset_password → 204` · `add_to_group → 204`（应用授 User Administrator 角色，最小权限；密码脱敏审计）。`assign_license` 因免费租户无 SKU 保持 dry-run。
 - [x] 阶段 5 · 极简单页 UI（`/`）：分类 + 引用回复 + 建议动作(dry-run执行) + 审计面板
+
+> 求职/面试讲稿见 [`docs/pitch.md`](docs/pitch.md)（含 STAR 讲稿、关键数字、排错故事、简历 bullet）。
 
 ## 评测结果（真实数字）
 
