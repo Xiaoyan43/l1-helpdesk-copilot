@@ -9,3 +9,43 @@ T007,"3rd floor printer not working","The big printer near the kitchen shows a p
 T008,"Reset my password please","I forgot my password over the long weekend, can you reset it when you get a chance? Not urgent.",grace@contoso-lab.com,account_access,low,request,KB001
 T009,"Whole office internet is down","Nobody in the London office can connect to anything, the internet appears to be completely down. This is blocking the entire team.",helpdesk@contoso-lab.com,network,critical,incident,KB002
 T010,"Add me to the Marketing shared mailbox","Please grant me access to the Marketing shared mailbox so I can handle incoming campaign replies.",ivan@contoso-lab.com,email,low,request,KB003
+T011,"Laptop won't turn on","My company laptop is completely dead this morning, no lights when I press power even with the charger plugged in. I can't work at all.",john@contoso-lab.com,hardware,high,incident,KB005
+T012,"Need a license for Visio","Could you assign me a Visio license? I need it to draw network diagrams this week.",kate@contoso-lab.com,software,medium,request,KB004
+T013,"Can't access the Finance shared drive","I'm getting 'access denied' on the Finance shared drive that I could open just last week.",leo@contoso-lab.com,account_access,medium,incident,
+T014,"MFA not working on my new phone","I got a new phone and can't approve sign-in requests anymore; the Authenticator app isn't set up, so I can't sign in to anything.",mia@contoso-lab.com,account_access,high,incident,KB001
+T015,"Too much spam getting through","Lots of spam emails are landing in my inbox lately. Can the filter be tightened?",nora@contoso-lab.com,email,low,request,KB003
+T016,"Printer toner low on 2nd floor","The 2nd floor printer says toner is low. Can someone replace the cartridge?",omar@contoso-lab.com,hardware,low,request,KB005
+T017,"VPN won't connect after password change","After I changed my password yesterday the VPN won't connect at all, it says authentication failed.",pia@contoso-lab.com,network,medium,incident,KB002
+T018,"Onboard a contractor for 2 weeks","Please set up a temporary account for a contractor, John Diaz, for two weeks, with access to the Project Falcon Teams.",manager@contoso-lab.com,account_access,medium,request,
+T019,"Outlook crashes on startup","Outlook crashes immediately every time I open it since this morning; webmail works fine though.",quinn@contoso-lab.com,email,medium,incident,KB003
+T020,"My account is sending spam - hacked?","Colleagues say they received spam from my account overnight. I think I've been hacked.",ravi@contoso-lab.com,security,critical,incident,KB006
+T021,"Request a second monitor","Could I get a second monitor for my desk? I'm working with large spreadsheets all day.",sara@contoso-lab.com,hardware,low,request,KB005
+T022,"WiFi slow in conference room B","WiFi is really slow in conference room B during meetings and it keeps dropping our video calls.",tom@contoso-lab.com,network,medium,incident,KB002
+T023,"Laptop asking for BitLocker recovery key","I can't boot my laptop, it's stuck asking for a BitLocker recovery key that I don't have. I can't get to my desktop.",uma@contoso-lab.com,account_access,high,incident,
+T024,"Microsoft Teams won't load","Teams is stuck on the loading screen and never opens. I already reinstalled it.",victor@contoso-lab.com,software,medium,incident,
+T025,"Prepare laptop for new starter","We have a new starter next week. Can you prepare a laptop with the standard software image?",manager@contoso-lab.com,hardware,medium,request,
+T026,"Disable account - employee left","Please disable the account for Tom Becker. His last working day was Friday.",hr@contoso-lab.com,account_access,medium,request,
+T027,"Can't print to PDF from Word","When I choose 'print to PDF' in Word nothing happens, no file is created.",wendy@contoso-lab.com,software,low,incident,
+T028,"Outgoing email is delayed","Emails I send are arriving 20-30 minutes late to external recipients lately.",xander@contoso-lab.com,email,medium,incident,KB003
+T029,"Fake invoice email going around","Several people on my team got the same fake invoice email with a link. Flagging it for awareness.",yara@contoso-lab.com,security,high,incident,KB006
+T030,"Reset password for a service account","Can you reset the password for the svc-reports service account? Our nightly scheduled job is failing because of it.",zoe@contoso-lab.com,account_access,high,request,KB001
+T031,"Wireless mouse stopped working","My wireless mouse stopped responding. I changed the batteries but still nothing.",adam@contoso-lab.com,hardware,low,incident,KB005
+T032,"Need local admin rights to install a tool","I need local admin rights on my laptop so I can install a developer tool for my project.",bella@contoso-lab.com,account_access,medium,request,
+T033,"VPN access for a new hire","A new hire needs VPN access configured before Monday so they can work remotely.",manager@contoso-lab.com,network,medium,request,KB002
+T034,"Office apps say license expired","I'm seeing 'license expired' banners in Word and Excel and can't edit documents.",carl@contoso-lab.com,software,medium,incident,KB004
+T035,"Alert: sign-in from another country","I got an alert that someone signed into my account from another country. That wasn't me.",dina@contoso-lab.com,security,high,incident,KB006
+T036,"Add members to engineering distribution list","Please add Sara and Mike to the all-engineering distribution list.",lead@contoso-lab.com,email,low,request,KB003
+T037,"Laptop is extremely slow","My laptop has become extremely slow over the past week, it takes minutes to open anything.",ed@contoso-lab.com,hardware,low,incident,
+T038,"Can't join Zoom meetings","Zoom won't let me join meetings, it says connection error, even though my internet works fine.",fiona@contoso-lab.com,software,medium,incident,
+T039,"How do I set an out-of-office reply?","Can you tell me how to set up an automatic out-of-office reply in Outlook for next week?",greg@contoso-lab.com,email,low,request,KB003
+T040,"Where do I submit a software reimbursement?","Quick question - where do I submit a reimbursement for some software I bought for work?",hana@contoso-lab.com,other,low,request,
+T041,"Meeting room screen won't show my laptop","The screen in meeting room 4 won't display my laptop over HDMI; the cable seems fine.",ian@contoso-lab.com,hardware,medium,incident,KB005
+T042,"My account keeps locking itself","This is the third time this week my account has locked itself out for no apparent reason.",jade@contoso-lab.com,account_access,medium,incident,KB001
+T043,"Critical: payroll system is down","The payroll application is down for the whole HR team and we are supposed to run payroll today.",hr@contoso-lab.com,software,critical,incident,
+T044,"Assign me a Power BI Pro license","Please assign me a Power BI Pro license for the new reporting project.",kai@contoso-lab.com,software,low,request,KB004
+T045,"Email in my Sent folder I didn't write","There's an email in my Sent folder I never wrote. I'm worried my account is compromised.",lena@contoso-lab.com,security,high,incident,KB006
+T046,"Docking station not charging laptop","When I connect to the docking station my laptop won't charge and the second monitor stays blank.",max@contoso-lab.com,hardware,medium,incident,KB005
+T047,"Forgot password, board presentation in 1 hour","I can't log in, I've forgotten my password, and I have a board presentation in an hour. Please help!",nina@contoso-lab.com,account_access,high,incident,KB001
+T048,"Guest WiFi for visitors tomorrow","We have visitors coming tomorrow. Can you set up guest WiFi access for them?",owen@contoso-lab.com,network,low,request,KB002
+T049,"Windows update broke our accounting app","After the latest Windows update, our accounting application won't open anymore.",pat@contoso-lab.com,software,medium,incident,
+T050,"Export my mailbox before laptop swap","Can you export my mailbox to a PST file before I switch to my new laptop?",quincy@contoso-lab.com,email,low,request,KB003

@@ -33,9 +33,9 @@ uvicorn app.main:app --reload
 
 ## 路线图（周末 MVP）
 - [x] 阶段 0 · 脚手架（配置 / 数据模型 / 可跑的 FastAPI + 规则基线分类）
-- [ ] 阶段 1 · Claude 结构化分类 + CSV 导入
-- [ ] 阶段 2 · KB + RAG 带引用回复
-- [ ] 阶段 3 · 40–60 条标注测试集 + 评测脚本
+- [x] 阶段 1 · Claude 结构化分类 + CSV 导入
+- [x] 阶段 2 · KB + RAG 带引用回复
+- [x] 阶段 3 · 50 条标注测试集 + 评测脚本（`python -m eval.run_eval`）
 - [ ] 阶段 4 · Microsoft Graph 账号动作（默认 dry-run）
 - [ ] 阶段 5 · 极简 UI + 审计日志页
 
