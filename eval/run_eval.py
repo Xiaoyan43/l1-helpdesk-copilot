@@ -33,7 +33,8 @@ def evaluate(engine: str) -> dict:
     classify_fn = rule_based_classify if engine == "baseline" else llm_classify
     hits = {f: 0 for f in FIELDS}
     per_cat: dict[str, dict[str, int]] = defaultdict(lambda: {"tp": 0, "fp": 0, "fn": 0})
-    errors = []
+    field_errors: dict[str, list] = {f: [] for f in FIELDS}
+    records = []
     t0 = time.time()
 
     for r in rows:
@@ -46,17 +47,19 @@ def evaluate(engine: str) -> dict:
                 "priority": r["gold_priority"].strip(),
                 "ticket_type": r["gold_ticket_type"].strip(),
                 "kb_hit": _norm_kb(r["gold_kb_hit"])}
+        records.append({"id": r["id"], "subject": r["subject"], "pred": pred,
+                        "gold": gold, "reasoning": getattr(c, "reasoning", "")})
         for f in FIELDS:
             if pred[f] == gold[f]:
                 hits[f] += 1
+            else:
+                field_errors[f].append({"id": r["id"], "subject": r["subject"],
+                                        "pred": pred[f], "gold": gold[f]})
         if pred["category"] == gold["category"]:
             per_cat[gold["category"]]["tp"] += 1
         else:
             per_cat[pred["category"]]["fp"] += 1
             per_cat[gold["category"]]["fn"] += 1
-            errors.append({"id": r["id"], "subject": r["subject"],
-                           "field": "category", "pred": pred["category"],
-                           "gold": gold["category"]})
 
     dt = time.time() - t0
     n = len(rows)
@@ -71,26 +74,34 @@ def evaluate(engine: str) -> dict:
         "seconds": round(dt, 1),
         "accuracy": {f: round(hits[f] / n, 3) for f in FIELDS},
         "category_macro_f1": round(sum(f1s) / len(f1s), 3) if f1s else 0.0,
-        "errors": errors,
+        "field_errors": field_errors,
+        "records": records,
     }
 
 
-def _print_report(res: dict, show_errors: bool) -> None:
+def _print_report(res: dict, show_errors: bool, fields: list[str] | None = None) -> None:
     print(f"\n=== engine={res['engine']}  n={res['n']}  用时={res['seconds']}s ===")
     for f in FIELDS:
         print(f"  {f:12} {res['accuracy'][f]:.0%}")
     print(f"  {'category-F1':12} {res['category_macro_f1']:.0%} (macro)")
-    if show_errors and res["errors"]:
-        print("  类别错误：")
-        for e in res["errors"]:
-            print(f"    {e['id']} 预测 {e['pred']:14} 应为 {e['gold']:14} | {e['subject']}")
+    if show_errors:
+        for f in (fields or FIELDS):
+            errs = res["field_errors"].get(f, [])
+            if not errs:
+                continue
+            print(f"  {f} 错误（{len(errs)}）：")
+            for e in errs:
+                print(f"    {e['id']} 预测 {str(e['pred']):14} 应为 {str(e['gold']):14} | {e['subject']}")
 
 
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--engine", choices=["baseline", "claude", "both"], default="both")
     ap.add_argument("--show-errors", action="store_true")
+    ap.add_argument("--fields", default=None,
+                    help="逗号分隔，仅显示这些字段的错误（如 priority）；默认全部")
     args = ap.parse_args()
+    fields = args.fields.split(",") if args.fields else None
 
     engines = ["baseline", "claude"] if args.engine == "both" else [args.engine]
     out = {}
@@ -100,7 +111,7 @@ def main() -> None:
             continue
         res = evaluate(eng)
         out[eng] = res
-        _print_report(res, args.show_errors)
+        _print_report(res, args.show_errors, fields)
 
     if "baseline" in out and "claude" in out:
         def metric(res: dict, f: str) -> float:

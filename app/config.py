@@ -1,7 +1,7 @@
 """集中配置。从环境变量 / .env 读取。"""
 from functools import lru_cache
 
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, PydanticBaseSettingsSource, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -24,6 +24,18 @@ class Settings(BaseSettings):
     # --- 路径 ---
     kb_dir: str = "kb"
     audit_log_path: str = "audit_log.jsonl"
+
+    @classmethod
+    def settings_customise_sources(
+        cls,
+        settings_cls,
+        init_settings: PydanticBaseSettingsSource,
+        env_settings: PydanticBaseSettingsSource,
+        dotenv_settings: PydanticBaseSettingsSource,
+        file_secret_settings: PydanticBaseSettingsSource,
+    ):
+        # 让 .env 优先于进程环境变量：避免外部空的 ANTHROPIC_API_KEY 等盖住 .env。
+        return init_settings, dotenv_settings, env_settings, file_secret_settings
 
 
 @lru_cache
