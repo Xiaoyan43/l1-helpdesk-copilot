@@ -26,6 +26,7 @@ from .models import (
     Citation,
     Classification,
     CreateUserRequest,
+    Feedback,
     ResetPasswordRequest,
     Ticket,
     TriageItem,
@@ -64,6 +65,7 @@ def healthz() -> dict:
         "graph_dry_run": s.graph_dry_run,
         "has_anthropic_key": bool(s.anthropic_api_key),
         "graph_creds_ready": _creds_ready(),
+        "action_confidence_threshold": s.action_confidence_threshold,
     }
 
 
@@ -149,6 +151,14 @@ def graph_groups(top: int = 30) -> dict:
 @app.get("/graph/skus")
 def graph_skus() -> dict:
     return list_skus()
+
+
+# --- 人在环反馈 ---
+@app.post("/feedback")
+def feedback(fb: Feedback) -> dict:
+    """记录操作员对回复的反馈（已解决/需升级）到审计日志。"""
+    log_event("feedback", **fb.model_dump())
+    return {"ok": True}
 
 
 # --- 审计日志 ---

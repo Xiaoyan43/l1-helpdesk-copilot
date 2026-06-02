@@ -51,6 +51,14 @@ class TriageItem(BaseModel):
     classification: Classification
 
 
+class Feedback(BaseModel):
+    """L1 操作员对回复草稿的反馈（人在环）。"""
+    ticket_subject: str = ""
+    status: str            # "resolved" | "escalate"
+    category: str | None = None
+    priority: str | None = None
+
+
 class Citation(BaseModel):
     id: str
     title: str

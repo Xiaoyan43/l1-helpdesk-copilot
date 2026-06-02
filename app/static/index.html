@@ -64,6 +64,11 @@
       <div id="cls"></div>
       <h2 style="margin-top:12px">3 · L1 回复草稿 <span id="replySrc" class="mut"></span></h2>
       <pre id="reply"></pre>
+      <div id="fbRow" class="row hide" style="margin-top:8px">
+        <button class="sec" onclick="sendFeedback('resolved')">✓ 标记已解决</button>
+        <button class="sec" onclick="sendFeedback('escalate')">↑ 需升级</button>
+        <span id="fbMsg" class="mut"></span>
+      </div>
     </div>
   </div>
 
@@ -79,6 +84,12 @@
       <option value="assign_license">assign_license 分配许可</option>
     </select>
     <div id="fields"></div>
+    <div id="guardrail" class="hide" style="margin-top:8px;padding:8px;border:1px solid #854d0e;border-radius:7px;background:#241a05">
+      <span class="warn">⚠ 分类置信度偏低（<span id="gConf"></span> &lt; 阈值 <span id="gThr"></span>），真实动作前请人工复核。</span>
+      <label style="display:flex;gap:6px;align-items:center;margin-top:6px;cursor:pointer">
+        <input type="checkbox" id="override" style="width:auto"> 我已人工复核，仍要执行
+      </label>
+    </div>
     <div class="row" style="margin-top:10px">
       <button onclick="execAction()">执行（遵循 dry-run）</button>
       <span id="actMsg" class="mut"></span>
@@ -100,11 +111,14 @@ const FIELDS = {
   assign_license:[["user","用户(UPN或id)","maria@labtenant.onmicrosoft.com"],["sku","skuId(GUID)","<skuId>"]],
 };
 let lastTicket = {};
+let lastClassification = null;
+let CONF_THRESHOLD = 0.7;
 
 async function loadHealth(){
   const h = await (await fetch("/healthz")).json();
   $("b-llm").textContent = "llm: " + (h.use_mock_llm || !h.has_anthropic_key ? "规则基线" : "claude");
   $("b-graph").textContent = "graph: " + (h.graph_dry_run || !h.graph_creds_ready ? "dry-run" : "LIVE");
+  if (typeof h.action_confidence_threshold === "number") CONF_THRESHOLD = h.action_confidence_threshold;
 }
 async function loadSamples(){
   const ts = await (await fetch("/tickets")).json();
@@ -132,6 +146,9 @@ async function triage(){
     <div style="margin-top:8px">检索(${r.retriever_mode}): ${cites}</div>`;
   $("replySrc").textContent = "(" + r.reply.source + ")";
   $("reply").textContent = r.reply.reply_text;
+  lastClassification = c;
+  $("fbRow").classList.remove("hide");
+  $("fbMsg").textContent = "";
   applySuggestion(c, ticket);
   loadAudit();
 }
@@ -156,10 +173,38 @@ function renderFields(ticket){
     if ((k==="user"||k==="user_principal_name") && t.requester) v = t.requester;
     return `<label>${lab}</label><input id="f_${k}" value="${v}" placeholder="${ph}" />`;
   }).join("");
+  updateGuardrail(lastClassification);
+}
+
+function updateGuardrail(c){
+  const low = c && typeof c.confidence === "number" && c.confidence < CONF_THRESHOLD;
+  $("guardrail").classList.toggle("hide", !low);
+  if (low){
+    $("gConf").textContent = c.confidence;
+    $("gThr").textContent = CONF_THRESHOLD;
+    $("override").checked = false;
+  }
+}
+
+async function sendFeedback(status){
+  if (!lastTicket.subject && !lastTicket.body) return;
+  await fetch("/feedback", {method:"POST", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({
+      ticket_subject: lastTicket.subject || "",
+      status,
+      category: lastClassification ? lastClassification.category : null,
+      priority: lastClassification ? lastClassification.priority : null,
+    })});
+  $("fbMsg").textContent = status === "resolved" ? "已记录：已解决 ✓" : "已记录：需升级 ↑";
+  loadAudit();
 }
 
 async function execAction(){
   const act = $("actType").value;
+  if (lastClassification && lastClassification.confidence < CONF_THRESHOLD && !$("override").checked){
+    $("actMsg").innerHTML = '<span class="warn">置信度偏低，请先勾选"我已人工复核"再执行。</span>';
+    return;
+  }
   const body = {};
   FIELDS[act].forEach(([k])=>{ const el=$("f_"+k); if(el && el.value) body[k]=el.value; });
   $("actMsg").textContent = "执行中…";
@@ -180,9 +225,10 @@ async function loadAudit(){
   const ev = await (await fetch("/audit?limit=12")).json();
   if(!ev.length){ $("audit").innerHTML = '<tr><td class="mut">（暂无）</td></tr>'; return; }
   $("audit").innerHTML = ev.map(e=>{
-    let d = e.kind==="graph_action"
-      ? `${e.dry_run?"dry-run":"LIVE"} · ${e.summary} · ${e.success?"ok":"fail"}`
-      : `${(e.classification&&e.classification.category)||""} / ${(e.classification&&e.classification.priority)||""} — ${(e.ticket&&e.ticket.subject)||""}`;
+    let d;
+    if (e.kind==="graph_action") d = `${e.dry_run?"dry-run":"LIVE"} · ${e.summary} · ${e.success?"ok":"fail"}`;
+    else if (e.kind==="feedback") d = `${e.status==="resolved"?"已解决 ✓":"需升级 ↑"} — ${e.ticket_subject||""}`;
+    else d = `${(e.classification&&e.classification.category)||""} / ${(e.classification&&e.classification.priority)||""} — ${(e.ticket&&e.ticket.subject)||""}`;
     return `<tr><td class="mut" style="white-space:nowrap">${(e.ts||"").replace("T"," ").replace("+00:00","")}</td><td><b>${e.kind}</b><br>${d}</td></tr>`;
   }).join("");
 }

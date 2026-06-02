@@ -40,8 +40,9 @@ uvicorn app.main:app --reload
 - [x] 阶段 4 · Microsoft Graph 账号动作 + 审计日志 → 配置见 [`docs/m365-setup.md`](docs/m365-setup.md)
   - **已在真实免费 Entra 租户 live 验证**：`create_user → 201` · `reset_password → 204` · `add_to_group → 204`（应用授 User Administrator 角色，最小权限；密码脱敏审计）。`assign_license` 因免费租户无 SKU 保持 dry-run。
 - [x] 阶段 5 · 极简单页 UI（`/`）：分类 + 引用回复 + 建议动作(dry-run执行) + 审计面板
+- [x] 扩展 · **置信度阈值护栏**（分类置信度 < 阈值则拦截真实动作，需人工复核）+ **回复反馈按钮**（已解决/需升级，写入审计，形成人在环闭环）
 
-> 求职/面试讲稿见 [`docs/pitch.md`](docs/pitch.md)（含 STAR 讲稿、关键数字、排错故事、简历 bullet）。
+> 求职/面试讲稿见 [`docs/pitch.md`](docs/pitch.md)；录 demo 的分镜脚本见 [`docs/demo-script.md`](docs/demo-script.md)。
 
 ## 评测结果（真实数字）
 

@@ -21,7 +21,8 @@ class Settings(BaseSettings):
     azure_client_secret: str | None = None
     graph_dry_run: bool = True  # True=只演练，不真的修改租户
 
-    # --- 路径 ---
+    # --- 护栏 / 路径 ---
+    action_confidence_threshold: float = 0.7  # 分类置信度低于此值，UI 拦截真实动作待人工复核
     kb_dir: str = "kb"
     audit_log_path: str = "audit_log.jsonl"
 
