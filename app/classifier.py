@@ -124,11 +124,25 @@ _CLASSIFY_TOOL = {
 
 _SYSTEM_TEMPLATE = (
     "You are an L1 IT help desk triage assistant. Classify the ticket and call the "
-    "record_classification tool. Definitions: 'incident' = something is broken or not "
-    "working; 'request' = the user wants a new service, access, or item. "
-    "Priority: critical = widespread outage or active security breach; high = a single "
-    "user fully blocked, an urgent deadline, or a phishing/security report; medium = "
-    "normal degraded service; low = minor or no urgency. "
+    "record_classification tool.\n\n"
+    "ticket_type: 'incident' = something is broken / not working; "
+    "'request' = the user wants a new service, access, item, or change.\n\n"
+    "Priority rubric (apply strictly):\n"
+    "- critical: many users / a whole site or system down, OR an active account "
+    "compromise (account sending spam, confirmed credential theft).\n"
+    "- high: a single user is COMPLETELY blocked with no workaround (laptop dead, fully "
+    "locked out, can't boot), OR an explicit hard deadline (meeting/presentation within "
+    "~1 hour), OR a security report (phishing email, suspicious sign-in).\n"
+    "- medium: service is degraded or one app/resource is affected but the user can still "
+    "work or has a workaround (VPN drops intermittently, an app crashes, slow WiFi, "
+    "printer issue, can't reach one drive, license/sync problem).\n"
+    "- low: minor annoyance or routine / non-urgent request (request a monitor or license, "
+    "add to a group, set out-of-office, tighten spam filter, or anything marked 'not urgent').\n\n"
+    "Calibration examples (NOT the tickets to classify):\n"
+    "- 'My laptop is completely dead, I can't work at all' -> high\n"
+    "- 'Email is slow to send today but it still works' -> medium\n"
+    "- 'Please order me a desk riser when you get a chance' -> low\n"
+    "- 'Nobody in the office can reach any system' -> critical\n\n"
     "Set kb_hit to the single best-matching KB id, or 'NONE' if no article fits.\n\n"
     "Knowledge base:\n{catalog}"
 )
@@ -154,6 +168,7 @@ def llm_classify(ticket: Ticket) -> Classification:
     resp = _get_client().messages.create(
         model=s.classify_model,
         max_tokens=400,
+        temperature=0,   # 分类要可复现；Haiku 4.5 支持 temperature
         system=_SYSTEM_TEMPLATE.format(catalog=catalog),
         tools=[_CLASSIFY_TOOL],
         tool_choice={"type": "tool", "name": "record_classification"},
