@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>L1 HelpDesk Copilot (lab)</title>
+<style>
+  :root { --bg:#0f172a; --card:#1e293b; --mut:#94a3b8; --line:#334155; --txt:#e2e8f0; --acc:#38bdf8; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:14px/1.5 -apple-system,Segoe UI,Roboto,sans-serif; background:var(--bg); color:var(--txt); }
+  header { padding:14px 20px; border-bottom:1px solid var(--line); display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  header h1 { font-size:16px; margin:0; }
+  .badge { font-size:11px; padding:2px 8px; border-radius:10px; border:1px solid var(--line); color:var(--mut); }
+  .wrap { display:grid; grid-template-columns:1fr 1fr; gap:16px; padding:16px 20px; max-width:1200px; }
+  @media (max-width:880px){ .wrap{ grid-template-columns:1fr; } }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px; }
+  .card h2 { font-size:13px; text-transform:uppercase; letter-spacing:.04em; color:var(--mut); margin:0 0 10px; }
+  label { display:block; font-size:12px; color:var(--mut); margin:8px 0 3px; }
+  input, textarea, select { width:100%; background:#0b1220; color:var(--txt); border:1px solid var(--line); border-radius:7px; padding:8px; font:inherit; }
+  textarea { resize:vertical; }
+  button { background:var(--acc); color:#06283d; border:0; border-radius:7px; padding:8px 14px; font-weight:600; cursor:pointer; }
+  button.sec { background:transparent; color:var(--acc); border:1px solid var(--acc); }
+  .row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .pill { display:inline-block; font-size:12px; padding:2px 9px; border-radius:10px; border:1px solid var(--line); margin:2px 4px 2px 0; }
+  .p-low{color:#86efac;border-color:#14532d} .p-medium{color:#fde68a;border-color:#854d0e}
+  .p-high{color:#fdba74;border-color:#9a3412} .p-critical{color:#fca5a5;border-color:#991b1b}
+  pre { background:#0b1220; border:1px solid var(--line); border-radius:7px; padding:10px; overflow:auto; white-space:pre-wrap; font-size:12.5px; }
+  .mut { color:var(--mut); }
+  .hide { display:none; }
+  table { width:100%; border-collapse:collapse; font-size:12.5px; }
+  th,td { text-align:left; padding:5px 6px; border-bottom:1px solid var(--line); vertical-align:top; }
+  .ok{color:#86efac} .warn{color:#fdba74}
+  a { color:var(--acc); }
+</style>
+</head>
+<body>
+<header>
+  <h1>🛟 L1 HelpDesk Copilot</h1>
+  <span class="badge">lab / 作品 — 非生产</span>
+  <span id="b-llm" class="badge">llm: …</span>
+  <span id="b-graph" class="badge">graph: …</span>
+  <span class="badge"><a href="/docs">API /docs</a></span>
+</header>
+
+<div class="wrap">
+  <!-- 左：工单 → 分类/回复 -->
+  <div class="card">
+    <h2>1 · 工单</h2>
+    <label>载入样例</label>
+    <select id="sampleSel"><option value="">— 选择一条样例工单 —</option></select>
+    <label>主题</label>
+    <input id="subject" placeholder="例如 Can't log in - account locked" />
+    <label>正文</label>
+    <textarea id="body" rows="5" placeholder="把工单内容粘贴到这里…"></textarea>
+    <label>请求人（可选）</label>
+    <input id="requester" placeholder="alice@labtenant.onmicrosoft.com" />
+    <div class="row" style="margin-top:10px">
+      <button onclick="triage()">分类 + 生成回复</button>
+      <span id="triageMsg" class="mut"></span>
+    </div>
+
+    <div id="result" class="hide" style="margin-top:14px">
+      <h2>2 · 分类与引用</h2>
+      <div id="cls"></div>
+      <h2 style="margin-top:12px">3 · L1 回复草稿 <span id="replySrc" class="mut"></span></h2>
+      <pre id="reply"></pre>
+    </div>
+  </div>
+
+  <!-- 右：动作 + 审计 -->
+  <div class="card">
+    <h2>4 · 建议账号动作（Microsoft Graph）</h2>
+    <p id="suggest" class="mut">先分类一条工单，这里会给出建议的动作。</p>
+    <label>动作类型</label>
+    <select id="actType" onchange="renderFields()">
+      <option value="create_user">create_user 建用户</option>
+      <option value="reset_password">reset_password 重置密码</option>
+      <option value="add_to_group">add_to_group 加入组</option>
+      <option value="assign_license">assign_license 分配许可</option>
+    </select>
+    <div id="fields"></div>
+    <div class="row" style="margin-top:10px">
+      <button onclick="execAction()">执行（遵循 dry-run）</button>
+      <span id="actMsg" class="mut"></span>
+    </div>
+    <div id="actResult" class="hide" style="margin-top:10px"></div>
+
+    <h2 style="margin-top:18px">5 · 审计日志 <button class="sec" style="padding:3px 10px;font-size:12px" onclick="loadAudit()">刷新</button></h2>
+    <table><tbody id="audit"><tr><td class="mut">（暂无）</td></tr></tbody></table>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const ACT_PATH = { create_user:"create-user", reset_password:"reset-password", add_to_group:"add-to-group", assign_license:"assign-license" };
+const FIELDS = {
+  create_user:[["display_name","显示名","Maria Chen"],["user_principal_name","UPN","maria@labtenant.onmicrosoft.com"]],
+  reset_password:[["user","用户(UPN或id)","grace@labtenant.onmicrosoft.com"]],
+  add_to_group:[["user","用户对象id","<userId>"],["group","组对象id","<groupId>"]],
+  assign_license:[["user","用户(UPN或id)","maria@labtenant.onmicrosoft.com"],["sku","skuId(GUID)","<skuId>"]],
+};
+let lastTicket = {};
+
+async function loadHealth(){
+  const h = await (await fetch("/healthz")).json();
+  $("b-llm").textContent = "llm: " + (h.use_mock_llm || !h.has_anthropic_key ? "规则基线" : "claude");
+  $("b-graph").textContent = "graph: " + (h.graph_dry_run || !h.graph_creds_ready ? "dry-run" : "LIVE");
+}
+async function loadSamples(){
+  const ts = await (await fetch("/tickets")).json();
+  ts.forEach(t => { const o=document.createElement("option"); o.value=t.id; o.textContent=`${t.id} — ${t.subject}`; o._t=t; $("sampleSel").appendChild(o); });
+  $("sampleSel").onchange = e => { const o=e.target.selectedOptions[0]; if(o && o._t){ $("subject").value=o._t.subject; $("body").value=o._t.body; $("requester").value=o._t.requester||""; } };
+}
+function priPill(p){ return `<span class="pill p-${p}">priority: ${p}</span>`; }
+
+async function triage(){
+  $("triageMsg").textContent = "处理中…";
+  const ticket = { subject:$("subject").value, body:$("body").value, requester:$("requester").value||null };
+  lastTicket = ticket;
+  const r = await (await fetch("/respond", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(ticket)})).json();
+  $("triageMsg").textContent = "";
+  $("result").classList.remove("hide");
+  const c = r.classification;
+  const cites = r.citations.map(x=>`<span class="pill">${x.id} · ${x.title} <span class="mut">(${x.score})</span></span>`).join(" ");
+  $("cls").innerHTML = `
+    <span class="pill">${c.category}</span>${priPill(c.priority)}
+    <span class="pill">${c.ticket_type}</span>
+    <span class="pill">kb_hit: ${c.kb_hit||"—"}</span>
+    <span class="pill">conf: ${c.confidence}</span>
+    <span class="pill mut">source: ${c.source}</span>
+    <div class="mut" style="margin-top:6px">${c.reasoning||""}</div>
+    <div style="margin-top:8px">检索(${r.retriever_mode}): ${cites}</div>`;
+  $("replySrc").textContent = "(" + r.reply.source + ")";
+  $("reply").textContent = r.reply.reply_text;
+  applySuggestion(c, ticket);
+  loadAudit();
+}
+
+function applySuggestion(c, ticket){
+  const text = ((ticket.subject||"")+" "+(ticket.body||"")).toLowerCase();
+  let act = null;
+  if (/new hire|onboard|new starter|create (her|his|an|a) account|set up (a )?(temporary )?account/.test(text)) act="create_user";
+  else if (/reset|forgot.*password|locked|unlock/.test(text)) act="reset_password";
+  else if (/add .* to|distribution|shared mailbox|join .* group|members? to/.test(text)) act="add_to_group";
+  else if (/licen[sc]e/.test(text)) act="assign_license";
+  if (act){ $("actType").value = act; $("suggest").innerHTML = `建议：<b>${act}</b>（基于分类 ${c.category}/${c.ticket_type}）`; }
+  else $("suggest").textContent = "这条看起来不是可自动执行的账号动作。";
+  renderFields(ticket);
+}
+
+function renderFields(ticket){
+  const t = ticket || lastTicket || {};
+  const act = $("actType").value;
+  $("fields").innerHTML = FIELDS[act].map(([k,lab,ph])=>{
+    let v = "";
+    if ((k==="user"||k==="user_principal_name") && t.requester) v = t.requester;
+    return `<label>${lab}</label><input id="f_${k}" value="${v}" placeholder="${ph}" />`;
+  }).join("");
+}
+
+async function execAction(){
+  const act = $("actType").value;
+  const body = {};
+  FIELDS[act].forEach(([k])=>{ const el=$("f_"+k); if(el && el.value) body[k]=el.value; });
+  $("actMsg").textContent = "执行中…";
+  const r = await (await fetch("/actions/"+ACT_PATH[act], {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)})).json();
+  $("actMsg").textContent = "";
+  $("actResult").classList.remove("hide");
+  const tag = r.dry_run ? '<span class="pill warn">DRY-RUN</span>' : '<span class="pill ok">LIVE</span>';
+  const ok = r.success ? '<span class="ok">success</span>' : '<span class="warn">failed</span>';
+  let pw = r.generated_password ? `<div>临时密码（仅此一次，不入审计）：<b>${r.generated_password}</b></div>` : "";
+  let err = r.error ? `<div class="warn">error: ${r.error}</div>` : "";
+  $("actResult").innerHTML = `${tag} ${ok} — ${r.summary}${pw}${err}
+    <div class="mut" style="margin-top:6px">将发送的 Graph 请求：</div>
+    <pre>${JSON.stringify(r.request, null, 2)}</pre>`;
+  loadAudit();
+}
+
+async function loadAudit(){
+  const ev = await (await fetch("/audit?limit=12")).json();
+  if(!ev.length){ $("audit").innerHTML = '<tr><td class="mut">（暂无）</td></tr>'; return; }
+  $("audit").innerHTML = ev.map(e=>{
+    let d = e.kind==="graph_action"
+      ? `${e.dry_run?"dry-run":"LIVE"} · ${e.summary} · ${e.success?"ok":"fail"}`
+      : `${(e.classification&&e.classification.category)||""} / ${(e.classification&&e.classification.priority)||""} — ${(e.ticket&&e.ticket.subject)||""}`;
+    return `<tr><td class="mut" style="white-space:nowrap">${(e.ts||"").replace("T"," ").replace("+00:00","")}</td><td><b>${e.kind}</b><br>${d}</td></tr>`;
+  }).join("");
+}
+
+loadHealth(); loadSamples(); renderFields(); loadAudit();
+</script>
+</body>
+</html>

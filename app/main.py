@@ -1,5 +1,8 @@
-"""FastAPI 入口。阶段 2：分类 + KB 检索 + 带引用的回复。"""
+"""FastAPI 入口。阶段 5：分类 + RAG 回复 + Graph 动作 + 审计 + 单页 UI。"""
+from pathlib import Path
+
 from fastapi import FastAPI, File, UploadFile
+from fastapi.responses import HTMLResponse
 
 from .audit import log_event, read_events
 from .classifier import classify
@@ -35,6 +38,21 @@ app = FastAPI(
     description="个人作品，仅对样例工单 + lab 租户运行，非生产系统。",
     version="0.1.0",
 )
+
+
+_INDEX = Path(__file__).resolve().parent / "static" / "index.html"
+
+
+@app.get("/", response_class=HTMLResponse)
+def index() -> str:
+    """极简单页 UI。"""
+    return _INDEX.read_text(encoding="utf-8")
+
+
+@app.get("/tickets", response_model=list[Ticket])
+def tickets() -> list[Ticket]:
+    """内置样例工单（供 UI 下拉载入）。"""
+    return load_tickets_csv()
 
 
 @app.get("/healthz")

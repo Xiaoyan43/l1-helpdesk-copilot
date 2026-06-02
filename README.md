@@ -26,7 +26,8 @@ python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env          # 按需填 key；不填也能用规则基线跑起来
 uvicorn app.main:app --reload
-# 打开 http://127.0.0.1:8000/docs
+# 单页 UI:   http://127.0.0.1:8000/
+# API 文档:  http://127.0.0.1:8000/docs
 ```
 不填任何 key 时，`USE_MOCK_LLM=true` 会用**本地规则基线**分类——方便离线 demo，
 也是评测时和 Claude 对比的 baseline。
@@ -37,7 +38,7 @@ uvicorn app.main:app --reload
 - [x] 阶段 2 · KB + RAG 带引用回复
 - [x] 阶段 3 · 50 条标注测试集 + 评测脚本（`python -m eval.run_eval`）
 - [x] 阶段 4 · Microsoft Graph 账号动作（默认 dry-run）+ 审计日志 → 配置见 [`docs/m365-setup.md`](docs/m365-setup.md)
-- [ ] 阶段 5 · 极简 UI + 审计日志页
+- [x] 阶段 5 · 极简单页 UI（`/`）：分类 + 引用回复 + 建议动作(dry-run执行) + 审计面板
 
 ## 目录结构
 ```
