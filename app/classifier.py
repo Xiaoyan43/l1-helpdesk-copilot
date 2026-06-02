@@ -102,6 +102,7 @@ def rule_based_classify(ticket: Ticket) -> Classification:
 _CLASSIFY_TOOL = {
     "name": "record_classification",
     "description": "记录一条 IT 支持工单的结构化分类结果。",
+    "strict": True,   # 严格模式：保证输出符合 schema（枚举不会越界）。Haiku 4.5 支持。
     "input_schema": {
         "type": "object",
         "properties": {
@@ -112,10 +113,12 @@ _CLASSIFY_TOOL = {
                 "type": "string",
                 "description": "最匹配的 KB id（如 KB001）；若无文章契合则填 'NONE'。",
             },
-            "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+            "confidence": {"type": "number"},
             "reasoning": {"type": "string", "description": "一句话分类理由。"},
         },
-        "required": ["category", "priority", "ticket_type", "kb_hit", "confidence"],
+        # strict 模式要求所有属性都在 required 且禁止额外属性
+        "required": ["category", "priority", "ticket_type", "kb_hit", "confidence", "reasoning"],
+        "additionalProperties": False,
     },
 }
 
@@ -141,7 +144,11 @@ def _get_client() -> Anthropic:
 
 
 def llm_classify(ticket: Ticket) -> Classification:
-    """调用 Claude（tool use）做结构化分类；解析失败则回落到规则基线。"""
+    """调用 Claude（tool use, strict）做结构化分类；解析失败则回落到规则基线。
+
+    注：未加 prompt caching——system+tools 前缀仅几百 token，低于 Haiku 4.5 的
+    4096 token 最小可缓存阈值，加 cache_control 也不会命中（纯开销）。
+    """
     s = get_settings()
     catalog = "\n".join(f"{kid}: {title}" for kid, title in KB_CATALOG.items())
     resp = _get_client().messages.create(

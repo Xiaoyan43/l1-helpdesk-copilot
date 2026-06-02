@@ -11,8 +11,8 @@ class Settings(BaseSettings):
 
     # --- LLM (Claude) ---
     anthropic_api_key: str | None = None
-    classify_model: str = "claude-haiku-4-5-20251001"  # 分类用便宜快的 Haiku 足够
-    respond_model: str = "claude-sonnet-4-6"           # 写回复用 Sonnet
+    classify_model: str = "claude-haiku-4-5"   # 分类用便宜快的 Haiku；想更准可换 claude-sonnet-4-6 / claude-opus-4-8
+    respond_model: str = "claude-sonnet-4-6"   # 写回复用 Sonnet
     use_mock_llm: bool = True   # True=本地规则基线，不调用 API
 
     # --- Microsoft Graph (lab 租户) ---
