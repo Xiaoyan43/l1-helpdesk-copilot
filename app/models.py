@@ -49,3 +49,24 @@ class TriageItem(BaseModel):
     """一条工单 + 它的分类结果（批量接口返回用）。"""
     ticket: Ticket
     classification: Classification
+
+
+class Citation(BaseModel):
+    id: str
+    title: str
+    score: float = 0.0
+
+
+class Reply(BaseModel):
+    reply_text: str
+    cited_kb: list[str] = []
+    source: str = "mock"   # "mock"(模板) 或 "claude"
+
+
+class TriageResult(BaseModel):
+    """完整流水线结果：分类 + 检索引用 + 回复草稿。"""
+    ticket: Ticket
+    classification: Classification
+    citations: list[Citation] = []
+    reply: Reply
+    retriever_mode: str = "bm25"
