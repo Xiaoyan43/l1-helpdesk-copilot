@@ -36,7 +36,7 @@ uvicorn app.main:app --reload
 - [x] 阶段 1 · Claude 结构化分类 + CSV 导入
 - [x] 阶段 2 · KB + RAG 带引用回复
 - [x] 阶段 3 · 50 条标注测试集 + 评测脚本（`python -m eval.run_eval`）
-- [ ] 阶段 4 · Microsoft Graph 账号动作（默认 dry-run）
+- [x] 阶段 4 · Microsoft Graph 账号动作（默认 dry-run）+ 审计日志 → 配置见 [`docs/m365-setup.md`](docs/m365-setup.md)
 - [ ] 阶段 5 · 极简 UI + 审计日志页
 
 ## 目录结构

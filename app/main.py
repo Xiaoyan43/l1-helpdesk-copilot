@@ -1,13 +1,29 @@
 """FastAPI 入口。阶段 2：分类 + KB 检索 + 带引用的回复。"""
 from fastapi import FastAPI, File, UploadFile
 
+from .audit import log_event, read_events
 from .classifier import classify
 from .config import get_settings
 from .data_io import load_tickets_csv, parse_tickets_bytes
+from .graph_actions import (
+    _creds_ready,
+    add_to_group,
+    assign_license,
+    create_user,
+    list_groups,
+    list_skus,
+    list_users,
+    reset_password,
+)
 from .kb import get_retriever
 from .models import (
+    ActionResult,
+    AddToGroupRequest,
+    AssignLicenseRequest,
     Citation,
     Classification,
+    CreateUserRequest,
+    ResetPasswordRequest,
     Ticket,
     TriageItem,
     TriageResult,
@@ -29,13 +45,16 @@ def healthz() -> dict:
         "use_mock_llm": s.use_mock_llm,
         "graph_dry_run": s.graph_dry_run,
         "has_anthropic_key": bool(s.anthropic_api_key),
+        "graph_creds_ready": _creds_ready(),
     }
 
 
 @app.post("/classify", response_model=Classification)
 def classify_endpoint(ticket: Ticket) -> Classification:
     """对粘贴的一条工单分类。"""
-    return classify(ticket)
+    c = classify(ticket)
+    log_event("classification", ticket=ticket.model_dump(), classification=c.model_dump())
+    return c
 
 
 @app.get("/classify/sample", response_model=list[TriageItem])
@@ -59,7 +78,7 @@ def respond(ticket: Ticket, k: int = 2) -> TriageResult:
     hits = retriever.search(f"{ticket.subject} {ticket.body}", k=k)
     articles = [a for a, _ in hits]
     reply = generate_reply(ticket, cl, articles)
-    return TriageResult(
+    result = TriageResult(
         ticket=ticket,
         classification=cl,
         citations=[Citation(id=a.id, title=a.title, score=round(s, 3))
@@ -67,3 +86,54 @@ def respond(ticket: Ticket, k: int = 2) -> TriageResult:
         reply=reply,
         retriever_mode=retriever.mode,
     )
+    log_event(
+        "classification",
+        ticket=ticket.model_dump(),
+        classification=cl.model_dump(),
+        citations=[c.model_dump() for c in result.citations],
+        reply_source=reply.source,
+    )
+    return result
+
+
+# --- Microsoft Graph 账号动作（默认 dry-run；详见 docs/m365-setup.md） ---
+@app.post("/actions/create-user", response_model=ActionResult)
+def act_create_user(req: CreateUserRequest) -> ActionResult:
+    return create_user(req)
+
+
+@app.post("/actions/reset-password", response_model=ActionResult)
+def act_reset_password(req: ResetPasswordRequest) -> ActionResult:
+    return reset_password(req)
+
+
+@app.post("/actions/add-to-group", response_model=ActionResult)
+def act_add_to_group(req: AddToGroupRequest) -> ActionResult:
+    return add_to_group(req)
+
+
+@app.post("/actions/assign-license", response_model=ActionResult)
+def act_assign_license(req: AssignLicenseRequest) -> ActionResult:
+    return assign_license(req)
+
+
+# --- 只读：发现租户里的 id（需真实凭据） ---
+@app.get("/graph/users")
+def graph_users(top: int = 15) -> dict:
+    return list_users(top)
+
+
+@app.get("/graph/groups")
+def graph_groups(top: int = 30) -> dict:
+    return list_groups(top)
+
+
+@app.get("/graph/skus")
+def graph_skus() -> dict:
+    return list_skus()
+
+
+# --- 审计日志 ---
+@app.get("/audit")
+def audit(limit: int = 100) -> list[dict]:
+    return read_events(limit)

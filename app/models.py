@@ -70,3 +70,40 @@ class TriageResult(BaseModel):
     citations: list[Citation] = []
     reply: Reply
     retriever_mode: str = "bm25"
+
+
+# --- Microsoft Graph 账号动作（lab 租户） ---
+class CreateUserRequest(BaseModel):
+    display_name: str
+    user_principal_name: str            # 如 maria@yourtenant.onmicrosoft.com
+    mail_nickname: str | None = None
+    password: str | None = None          # 留空则自动生成强临时密码
+    usage_location: str = "US"           # 分配许可前必须有
+
+
+class ResetPasswordRequest(BaseModel):
+    user: str                            # UPN 或对象 id
+    new_password: str | None = None      # 留空则自动生成
+    force_change: bool = True
+
+
+class AddToGroupRequest(BaseModel):
+    user: str                            # 用户对象 id
+    group: str                           # 组对象 id
+
+
+class AssignLicenseRequest(BaseModel):
+    user: str                            # UPN 或对象 id
+    sku: str                             # skuId（GUID，可用 /graph/skus 查）
+
+
+class ActionResult(BaseModel):
+    action: str
+    dry_run: bool
+    success: bool
+    summary: str
+    request: dict = {}                   # 回显的 Graph 请求（密码已脱敏）
+    graph_status: int | None = None
+    detail: dict | None = None
+    error: str | None = None
+    generated_password: str | None = None  # 仅返回给操作员，不写入审计日志
