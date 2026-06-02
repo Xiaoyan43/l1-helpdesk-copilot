@@ -35,8 +35,8 @@ from .models import (
 from .responder import generate_reply
 
 app = FastAPI(
-    title="L1 HelpDesk Copilot (lab / 作品)",
-    description="个人作品，仅对样例工单 + lab 租户运行，非生产系统。",
+    title="L1 HelpDesk Copilot (lab / portfolio)",
+    description="Personal portfolio project — runs only on sample tickets and a lab tenant, not production.",
     version="0.1.0",
 )
 
@@ -46,13 +46,13 @@ _INDEX = Path(__file__).resolve().parent / "static" / "index.html"
 
 @app.get("/", response_class=HTMLResponse)
 def index() -> str:
-    """极简单页 UI。"""
+    """Minimal single-page UI."""
     return _INDEX.read_text(encoding="utf-8")
 
 
 @app.get("/tickets", response_model=list[Ticket])
 def tickets() -> list[Ticket]:
-    """内置样例工单（供 UI 下拉载入）。"""
+    """Bundled sample tickets (for the UI dropdown)."""
     return load_tickets_csv()
 
 
@@ -71,7 +71,7 @@ def healthz() -> dict:
 
 @app.post("/classify", response_model=Classification)
 def classify_endpoint(ticket: Ticket) -> Classification:
-    """对粘贴的一条工单分类。"""
+    """Classify a single pasted ticket."""
     c = classify(ticket)
     log_event("classification", ticket=ticket.model_dump(), classification=c.model_dump())
     return c
@@ -79,20 +79,20 @@ def classify_endpoint(ticket: Ticket) -> Classification:
 
 @app.get("/classify/sample", response_model=list[TriageItem])
 def classify_sample() -> list[TriageItem]:
-    """对内置样例 CSV 的每条工单分类。"""
+    """Classify every ticket in the bundled sample CSV."""
     return [TriageItem(ticket=t, classification=classify(t)) for t in load_tickets_csv()]
 
 
 @app.post("/ingest/csv", response_model=list[TriageItem])
 async def ingest_csv(file: UploadFile = File(...)) -> list[TriageItem]:
-    """上传一个工单 CSV（列 id,subject,body,requester），逐条分类。"""
+    """Upload a ticket CSV (columns id,subject,body,requester) and classify each row."""
     tickets = parse_tickets_bytes(await file.read())
     return [TriageItem(ticket=t, classification=classify(t)) for t in tickets]
 
 
 @app.post("/respond", response_model=TriageResult)
 def respond(ticket: Ticket, k: int = 2) -> TriageResult:
-    """完整流水线：分类 → KB 检索 top-k → 生成带引用的 L1 回复。"""
+    """Full pipeline: classify -> retrieve top-k KB -> draft a cited L1 reply."""
     cl = classify(ticket)
     retriever = get_retriever()
     hits = retriever.search(f"{ticket.subject} {ticket.body}", k=k)
@@ -156,7 +156,7 @@ def graph_skus() -> dict:
 # --- 人在环反馈 ---
 @app.post("/feedback")
 def feedback(fb: Feedback) -> dict:
-    """记录操作员对回复的反馈（已解决/需升级）到审计日志。"""
+    """Log operator feedback on a reply (resolved/escalate) to the audit log."""
     log_event("feedback", **fb.model_dump())
     return {"ok": True}
 

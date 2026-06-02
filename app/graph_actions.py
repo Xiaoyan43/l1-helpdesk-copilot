@@ -119,7 +119,7 @@ def create_user(req: CreateUserRequest) -> ActionResult:
         "passwordProfile": {"forceChangePasswordNextSignIn": True, "password": pwd},
     }
     return _run("create_user", "POST", "/users", body,
-                f"创建用户 {req.user_principal_name}", secret=pwd)
+                f"create user {req.user_principal_name}", secret=pwd)
 
 
 def reset_password(req: ResetPasswordRequest) -> ActionResult:
@@ -127,25 +127,25 @@ def reset_password(req: ResetPasswordRequest) -> ActionResult:
     body = {"passwordProfile": {
         "forceChangePasswordNextSignIn": req.force_change, "password": pwd}}
     return _run("reset_password", "PATCH", f"/users/{req.user}", body,
-                f"重置 {req.user} 的密码", secret=pwd)
+                f"reset password for {req.user}", secret=pwd)
 
 
 def add_to_group(req: AddToGroupRequest) -> ActionResult:
     body = {"@odata.id": f"{GRAPH}/directoryObjects/{req.user}"}
     return _run("add_to_group", "POST", f"/groups/{req.group}/members/$ref", body,
-                f"把用户 {req.user} 加入组 {req.group}")
+                f"add user {req.user} to group {req.group}")
 
 
 def assign_license(req: AssignLicenseRequest) -> ActionResult:
     body = {"addLicenses": [{"skuId": req.sku, "disabledPlans": []}], "removeLicenses": []}
     return _run("assign_license", "POST", f"/users/{req.user}/assignLicense", body,
-                f"给 {req.user} 分配许可 {req.sku}")
+                f"assign license {req.sku} to {req.user}")
 
 
 # --- 只读辅助（发现租户里的 id；需真实凭据） ---
 def _get(path: str) -> dict:
     if not _creds_ready():
-        return {"note": "需在 .env 配置 Graph 凭据后才能读取真实租户数据。"}
+        return {"note": "Configure Graph credentials in .env to read live tenant data."}
     with httpx.Client(timeout=30.0) as c:
         r = c.get(f"{GRAPH}{path}", headers={"Authorization": f"Bearer {_token()}"})
     try:

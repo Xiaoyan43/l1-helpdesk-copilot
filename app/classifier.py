@@ -93,7 +93,7 @@ def rule_based_classify(ticket: Ticket) -> Classification:
         ticket_type=ticket_type,
         kb_hit=kb_hit,
         confidence=round(confidence, 2),
-        reasoning="规则基线：基于关键词计数。",
+        reasoning="Rule baseline: keyword counts.",
         source="mock",
     )
 

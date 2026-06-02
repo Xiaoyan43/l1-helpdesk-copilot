@@ -38,7 +38,7 @@ class Classification(BaseModel):
     priority: Priority
     ticket_type: TicketType
     kb_hit: str | None = Field(
-        default=None, description="命中的 KB 文章 id（如 KB001），无则 None"
+        default=None, description="ID of the KB article hit (e.g. KB001), or None"
     )
     confidence: float = Field(ge=0.0, le=1.0, default=0.5)
     reasoning: str = ""
@@ -46,13 +46,13 @@ class Classification(BaseModel):
 
 
 class TriageItem(BaseModel):
-    """一条工单 + 它的分类结果（批量接口返回用）。"""
+    """A ticket plus its classification (returned by batch endpoints)."""
     ticket: Ticket
     classification: Classification
 
 
 class Feedback(BaseModel):
-    """L1 操作员对回复草稿的反馈（人在环）。"""
+    """L1 operator feedback on a reply draft (human-in-the-loop)."""
     ticket_subject: str = ""
     status: str            # "resolved" | "escalate"
     category: str | None = None
@@ -72,7 +72,7 @@ class Reply(BaseModel):
 
 
 class TriageResult(BaseModel):
-    """完整流水线结果：分类 + 检索引用 + 回复草稿。"""
+    """Full pipeline result: classification + citations + reply draft."""
     ticket: Ticket
     classification: Classification
     citations: list[Citation] = []
