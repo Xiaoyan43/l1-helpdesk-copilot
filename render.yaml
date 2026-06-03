@@ -1,0 +1,23 @@
+# Render Blueprint — public MOCK demo (free tier, NO secrets).
+#
+# Safe by design:
+#   USE_MOCK_LLM=true  -> rule-baseline classifier + template replies (no Anthropic key, no API cost)
+#   GRAPH_DRY_RUN=true -> Microsoft Graph actions are SIMULATED only (no real tenant, no Azure secrets)
+#
+# To later show real Claude in the live demo: in the Render dashboard add
+#   ANTHROPIC_API_KEY=<key>  and set  USE_MOCK_LLM=false
+# (set a monthly spend cap in the Anthropic console first). Keep GRAPH_DRY_RUN=true in public.
+services:
+  - type: web
+    name: l1-helpdesk-copilot
+    runtime: python
+    plan: free
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    envVars:
+      - key: USE_MOCK_LLM
+        value: "true"
+      - key: GRAPH_DRY_RUN
+        value: "true"
+      - key: PYTHON_VERSION
+        value: "3.11.9"
