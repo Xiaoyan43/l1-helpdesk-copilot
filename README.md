@@ -5,6 +5,8 @@
 > Microsoft Entra lab tenant**, default `GRAPH_DRY_RUN=true` (simulate, don't modify the tenant).
 > Do not point this at any real or production credentials or data.
 
+**▶ Live demo:** **https://l1-helpdesk-copilot.onrender.com** — public, **mock mode** (rule-baseline classifier + dry-run Microsoft Graph, no keys; first load may take ~30s to wake on the free tier). The real Claude accuracy numbers are in [Eval results](#eval-results) below.
+
 An IT Support (L1 / Help Desk) portfolio project: take one support ticket →
 classify it with Claude → run RAG over a markdown knowledge base to draft a citation-grounded
 reply → for account requests, call Microsoft Graph to actually execute the action in a lab
