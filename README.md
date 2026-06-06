@@ -57,6 +57,14 @@ uvicorn app.main:app --reload
 # UI:   http://127.0.0.1:8000/
 # API:  http://127.0.0.1:8000/docs
 ```
+
+### Run with Docker
+```bash
+docker build -t l1-helpdesk-copilot .
+docker run --rm -p 8000:8000 -e PORT=8000 l1-helpdesk-copilot
+# UI: http://127.0.0.1:8000/  (mock LLM + Graph dry-run by default)
+```
+Mount a volume or pass `-e` flags for `ANTHROPIC_API_KEY`, Azure creds, etc. if needed.
 With no keys set, `USE_MOCK_LLM=true` uses a **local rule baseline** for classification — handy for an
 offline demo, and the baseline the Claude classifier is measured against. Set `ANTHROPIC_API_KEY`
 and `USE_MOCK_LLM=false` to use Claude.
