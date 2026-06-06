@@ -3,6 +3,9 @@ __pycache__/
 *.pyc
 .env
 audit_log.jsonl
+tickets.db
+tickets.db-wal
+tickets.db-shm
 eval/last_results.json
 .DS_Store
 .pytest_cache/

@@ -4,15 +4,20 @@
 > Pair it with [`ROADMAP.md`](ROADMAP.md) for what to build next.
 
 ## What this is
-An IT Support (L1 / Help Desk) **portfolio / lab** project (not production). Pipeline:
-ticket → **classify** with Claude (category / priority / incident-vs-request / KB hit) →
-**RAG** over a markdown KB → cited L1 reply → for account requests, **Microsoft Graph**
-actions on a free lab Entra tenant (default dry-run) → **audit log**. Plus a single-page UI,
-a confidence guardrail, human-in-the-loop feedback, and a 50-ticket eval harness.
+An IT Support (L1 / Help Desk) **portfolio / lab** project (not production). It's a real
+**Service Desk ticket workspace**: a persistent SQLite ticket queue with an ITSM lifecycle
+(New → In Progress → Waiting User → Escalated → Resolved), fields (category / priority /
+**impact** / **urgency** / SLA risk / requester / channel), Incident vs Service Request,
+**escalation reason + L2 team**, **resolution codes**, and a per-ticket **timeline** — with
+**Claude as the L1 copilot** on top. Per-ticket pipeline: **classify** with Claude (category /
+priority / impact / urgency / incident-vs-request / KB hit) → **RAG** over a markdown KB → cited L1
+reply → for account requests, **Microsoft Graph** actions on a free lab Entra tenant (default
+dry-run), recorded on the timeline. Plus a confidence guardrail, human-in-the-loop feedback, and a
+50-ticket eval harness.
 
 - **Repo:** https://github.com/Xiaoyan43/l1-helpdesk-copilot (public)
 - **Live demo:** https://l1-helpdesk-copilot.onrender.com (public, **mock mode**)
-- **Status:** Phases 0–5 done + extras. Live-deployed. See ROADMAP.md for next work.
+- **Status:** Phases 0–6 done + extras. Live-deployed. See ROADMAP.md for next work.
 
 ## Run / test / deploy
 ```bash
@@ -34,17 +39,22 @@ Deploy: `render.yaml` blueprint runs the public **mock** demo (free tier). No te
 ## Architecture (file map)
 ```
 app/
-  main.py          FastAPI routes (UI "/", /classify, /respond, /actions/*, /graph/*, /audit, /feedback, /healthz)
-  config.py        pydantic-settings; .env-first source order; defaults = mock + dry-run
-  models.py        pydantic schemas (Ticket, Classification, ActionResult, Feedback, ...)
-  classifier.py    rule_based_classify (baseline) + llm_classify (Claude, strict tool-use, temperature=0)
+  main.py          FastAPI routes: UI "/", /tickets (+ /{id}, /triage, /respond, /status, /escalate,
+                   /resolve, /comment), /classify, /respond, /actions/*, /graph/*, /audit, /feedback, /healthz
+  config.py        pydantic-settings; .env-first source order; defaults = mock + dry-run; tickets_db_path
+  models.py        pydantic schemas (Ticket, Classification[+impact/urgency], StoredTicket, TimelineEvent,
+                   TicketStatus/Impact/Urgency/Channel/EscalationTeam/ResolutionCode enums, ActionResult, ...)
+  classifier.py    rule_based_classify (baseline) + llm_classify (Claude, strict tool-use, temperature=0);
+                   both now also emit impact + urgency
+  store.py         SQLite ticket store + per-ticket timeline; seed_if_empty() seeds the queue from the CSV
+  sla.py           SLA_TARGETS per priority, due_dates(), sla_risk(), priority_from_matrix() (Impact×Urgency)
   kb.py            KB loader + Retriever (sentence-transformers if installed, else BM25 fallback)
   responder.py     cited L1 reply (Claude; mock template fallback)
   graph_actions.py Microsoft Graph: create_user/reset_password/add_to_group/assign_license (dry-run gate, password redaction)
-  audit.py         append-only audit_log.jsonl (gitignored)
-  static/index.html  single-page UI (English)
+  audit.py         append-only audit_log.jsonl (gitignored) — global cross-ticket record
+  static/index.html  single-page workspace UI: queue + ticket detail + intake (English, vanilla JS)
 kb/                6 markdown KB articles (KB001..KB006)
-data/sample_tickets.csv   50 hand-labelled tickets (gold_* columns)
+data/sample_tickets.csv   50 hand-labelled tickets (gold_* columns) — also seeds the ticket queue
 eval/run_eval.py   per-field accuracy + macro-F1; writes eval/last_results.json (gitignored)
 docs/              m365-setup.md, pitch.md (CN), demo-script.md (CN)
 render.yaml        Render blueprint (mock demo)
@@ -56,6 +66,9 @@ render.yaml        Render blueprint (mock demo)
 - **Models (aliases, no date suffix):** classify = `claude-haiku-4-5`, respond = `claude-sonnet-4-6`. Classifier uses **strict tool-use** + `temperature=0` for reproducible eval.
 - **Retrieval:** BM25 (`rank-bm25`) by default; installing `requirements-rag.txt` auto-upgrades to embeddings. KB hit (classifier field) is independent of BM25 retrieval.
 - **Graph password reset** needs the app's service principal to hold the **User Administrator** directory role (Graph perms alone give 403). Right after creating a user, reset-by-UPN can 404 (replication lag) — use the object id.
+- **Ticket store (`store.py`, SQLite at `tickets.db`, gitignored):** built at import in `main.py` (`init_db()` + `seed_if_empty()`). Seeding uses **`rule_based_classify` directly** (not `classify()`) so first-run/startup never burns the API even when a real key is configured; created_at is back-dated per ticket so SLA risk is a deliberate mix (~50% on-track / 33% at-risk / 17% breached). To get a fresh demo queue, just delete `tickets.db` and restart.
+- **Eval continuity:** the classifier still predicts `priority` directly — `impact`/`urgency` are *added* fields. The ITIL **Impact×Urgency→Priority** matrix (`sla.priority_from_matrix`) is shown in the UI as a cross-check only; it does **not** drive the stored priority or eval. So the documented eval numbers are unchanged (re-verified: baseline still category 80 / priority 54 / ticket_type 84 / kb_hit 60 / macro-F1 61).
+- **Two logs, two jobs:** per-ticket **timeline** lives in SQLite (`ticket_events`); the global **`audit_log.jsonl`** stays the cross-ticket record. Lifecycle mutations write to both. Graph actions accept an optional `ticket_id` to also land on that ticket's timeline.
 - **venv** lives at `.venv/`.
 
 ## Safety & honesty (do not break)

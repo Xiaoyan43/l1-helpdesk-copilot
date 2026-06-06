@@ -3,6 +3,11 @@
 Backlog of upgrades. Tags: **[impact]** low/med/high · **[effort]** S/M/L.
 This is a portfolio/lab MVP — keep changes scoped; flag scope creep.
 
+> **Recently shipped (Phase 6 — Service Desk workspace):** SQLite ticket store + timeline
+> (`store.py`), queue/detail UI, status lifecycle, Impact×Urgency→Priority + computed SLA risk
+> (`sla.py`), escalation reason + L2 team, resolution codes. The `tickets.db` store now exists, so
+> "persist audit to SQLite" below is a smaller lift (move the jsonl audit into the same DB).
+
 ## ⭐ Suggested next 3 (best portfolio ROf)
 1. **Tests + CI** — pytest (classifier baseline, KB retrieval, Graph dry-run, audit redaction) + GitHub Actions. A green CI badge on the repo is a strong credibility signal. [high][M]
 2. **README hero screenshot** — save a UI screenshot to `docs/img/` and embed at the top of README. Instant repo polish. [med][S]

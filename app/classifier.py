@@ -9,7 +9,15 @@
 from anthropic import Anthropic
 
 from .config import get_settings
-from .models import Category, Classification, Priority, Ticket, TicketType
+from .models import (
+    Category,
+    Classification,
+    Impact,
+    Priority,
+    Ticket,
+    TicketType,
+    Urgency,
+)
 
 # KB 目录：id -> 标题。分类提示词 + 阶段2 的 RAG 都会用到（届时和 kb/ 下文件对齐）。
 KB_CATALOG: dict[str, str] = {
@@ -46,6 +54,13 @@ _CRITICAL_HINTS = ["breach", "hacked", "compromise", "outage", "everyone", "whol
                    "all users", "ransomware"]
 _HIGH_HINTS = ["urgent", "asap", "locked out", "can't work", "deadline", "ceo",
                "executive", "vpn down", "phishing"]
+
+# impact / urgency 的规则线索（保持简单；不影响 eval 字段）
+_HIGH_IMPACT_HINTS = ["everyone", "all users", "whole office", "entire office", "whole site",
+                      "department", "nobody can", "no one can", "company-wide", "multiple users",
+                      "several people", "all staff", "the whole team", "site down"]
+_LOW_URGENCY_HINTS = ["not urgent", "no rush", "when you get a chance", "whenever", "low priority",
+                      "no hurry", "at your convenience", "sometime", "no immediate"]
 
 # 类别 -> KB 文章 id（阶段 2 会和真实 KB 对齐）
 _KB_MAP: dict[Category, str] = {
@@ -87,10 +102,30 @@ def rule_based_classify(ticket: Ticket) -> Classification:
     kb_hit = _KB_MAP.get(category) if best_score > 0 else None
     confidence = 0.4 if category == Category.other else min(0.9, 0.5 + 0.1 * best_score)
 
+    # urgency：高/紧急线索→high；明确不急或纯请求→low；其余 medium
+    if any(h in text for h in _CRITICAL_HINTS) or any(h in text for h in _HIGH_HINTS):
+        urgency = Urgency.high
+    elif any(h in text for h in _LOW_URGENCY_HINTS) or (
+        ticket_type == TicketType.request and inc == 0
+    ):
+        urgency = Urgency.low
+    else:
+        urgency = Urgency.medium
+
+    # impact：影响范围线索→high；常规请求→low；其余 medium
+    if any(h in text for h in _HIGH_IMPACT_HINTS) or any(h in text for h in _CRITICAL_HINTS):
+        impact = Impact.high
+    elif ticket_type == TicketType.request:
+        impact = Impact.low
+    else:
+        impact = Impact.medium
+
     return Classification(
         category=category,
         priority=priority,
         ticket_type=ticket_type,
+        impact=impact,
+        urgency=urgency,
         kb_hit=kb_hit,
         confidence=round(confidence, 2),
         reasoning="Rule baseline: keyword counts.",
@@ -109,6 +144,18 @@ _CLASSIFY_TOOL = {
             "category": {"type": "string", "enum": [c.value for c in Category]},
             "priority": {"type": "string", "enum": [p.value for p in Priority]},
             "ticket_type": {"type": "string", "enum": [t.value for t in TicketType]},
+            "impact": {
+                "type": "string",
+                "enum": [i.value for i in Impact],
+                "description": "Business impact: low=single user with a workaround; "
+                               "medium=a group of users or one business application; "
+                               "high=a whole department/site or a business-critical system.",
+            },
+            "urgency": {
+                "type": "string",
+                "enum": [u.value for u in Urgency],
+                "description": "How quickly it must be resolved (deadline / degree of disruption).",
+            },
             "kb_hit": {
                 "type": "string",
                 "description": "最匹配的 KB id（如 KB001）；若无文章契合则填 'NONE'。",
@@ -117,7 +164,8 @@ _CLASSIFY_TOOL = {
             "reasoning": {"type": "string", "description": "一句话分类理由。"},
         },
         # strict 模式要求所有属性都在 required 且禁止额外属性
-        "required": ["category", "priority", "ticket_type", "kb_hit", "confidence", "reasoning"],
+        "required": ["category", "priority", "ticket_type", "impact", "urgency",
+                     "kb_hit", "confidence", "reasoning"],
         "additionalProperties": False,
     },
 }
@@ -143,6 +191,11 @@ _SYSTEM_TEMPLATE = (
     "- 'Email is slow to send today but it still works' -> medium\n"
     "- 'Please order me a desk riser when you get a chance' -> low\n"
     "- 'Nobody in the office can reach any system' -> critical\n\n"
+    "Also set impact and urgency independently (these drive the ITIL impact x urgency view):\n"
+    "- impact: low = one user with a workaround; medium = a group of users or a single "
+    "business app; high = a whole department/site or a business-critical system.\n"
+    "- urgency: low = routine / no deadline; medium = work is degraded; high = user is "
+    "blocked now or there is a hard deadline.\n\n"
     "Set kb_hit to the single best-matching KB id, or 'NONE' if no article fits.\n\n"
     "Knowledge base:\n{catalog}"
 )
@@ -195,6 +248,8 @@ def llm_classify(ticket: Ticket) -> Classification:
             category=data["category"],
             priority=data["priority"],
             ticket_type=data["ticket_type"],
+            impact=data.get("impact", "medium"),
+            urgency=data.get("urgency", "medium"),
             kb_hit=kb,
             confidence=float(data.get("confidence", 0.6)),
             reasoning=data.get("reasoning", ""),

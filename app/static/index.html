@@ -9,10 +9,12 @@
   * { box-sizing:border-box; }
   body { margin:0; font:14px/1.5 -apple-system,Segoe UI,Roboto,sans-serif; background:var(--bg); color:var(--txt); }
   header { padding:14px 20px; border-bottom:1px solid var(--line); display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-  header h1 { font-size:16px; margin:0; }
+  header h1 { font-size:16px; margin:0; cursor:pointer; }
+  .grow { flex:1; }
   .badge { font-size:11px; padding:2px 8px; border-radius:10px; border:1px solid var(--line); color:var(--mut); }
-  .wrap { display:grid; grid-template-columns:1fr 1fr; gap:16px; padding:16px 20px; max-width:1200px; }
-  @media (max-width:880px){ .wrap{ grid-template-columns:1fr; } }
+  .wrap { display:grid; grid-template-columns:1fr 1fr; gap:16px; padding:16px 20px; max-width:1280px; }
+  .full { padding:16px 20px; max-width:1280px; }
+  @media (max-width:980px){ .wrap{ grid-template-columns:1fr; } }
   .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px; }
   .card h2 { font-size:13px; text-transform:uppercase; letter-spacing:.04em; color:var(--mut); margin:0 0 10px; }
   label { display:block; font-size:12px; color:var(--mut); margin:8px 0 3px; }
@@ -20,89 +22,194 @@
   textarea { resize:vertical; }
   button { background:var(--acc); color:#06283d; border:0; border-radius:7px; padding:8px 14px; font-weight:600; cursor:pointer; }
   button.sec { background:transparent; color:var(--acc); border:1px solid var(--acc); }
+  button.sm { padding:5px 10px; font-size:12px; }
   .row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-  .pill { display:inline-block; font-size:12px; padding:2px 9px; border-radius:10px; border:1px solid var(--line); margin:2px 4px 2px 0; }
+  hr { border:0; border-top:1px solid var(--line); margin:12px 0; }
+  .pill { display:inline-block; font-size:11.5px; padding:2px 9px; border-radius:10px; border:1px solid var(--line); margin:2px 4px 2px 0; white-space:nowrap; }
   .p-low{color:#86efac;border-color:#14532d} .p-medium{color:#fde68a;border-color:#854d0e}
   .p-high{color:#fdba74;border-color:#9a3412} .p-critical{color:#fca5a5;border-color:#991b1b}
+  .s-new{color:#93c5fd;border-color:#1e3a8a} .s-in_progress{color:#67e8f9;border-color:#155e75}
+  .s-waiting_user{color:#fde68a;border-color:#854d0e} .s-escalated{color:#fdba74;border-color:#9a3412}
+  .s-resolved{color:#86efac;border-color:#14532d}
+  .sla-on_track{color:#86efac;border-color:#14532d} .sla-met{color:#86efac;border-color:#14532d}
+  .sla-at_risk{color:#fde68a;border-color:#854d0e}
+  .sla-breached{color:#fca5a5;border-color:#991b1b} .sla-missed{color:#fca5a5;border-color:#991b1b}
+  .t-incident{color:#fca5a5;border-color:#7f1d1d} .t-request{color:#93c5fd;border-color:#1e3a8a}
   pre { background:#0b1220; border:1px solid var(--line); border-radius:7px; padding:10px; overflow:auto; white-space:pre-wrap; font-size:12.5px; }
   .mut { color:var(--mut); }
   .hide { display:none; }
   table { width:100%; border-collapse:collapse; font-size:12.5px; }
-  th,td { text-align:left; padding:5px 6px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th,td { text-align:left; padding:6px 7px; border-bottom:1px solid var(--line); vertical-align:middle; }
+  th { color:var(--mut); font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:.03em; }
+  tbody tr { cursor:pointer; }
+  tbody tr:hover { background:#172033; }
+  .chip { font-size:12px; padding:4px 11px; border-radius:14px; border:1px solid var(--line); color:var(--mut); cursor:pointer; background:transparent; }
+  .chip.on { background:var(--acc); color:#06283d; border-color:var(--acc); font-weight:600; }
+  .facts { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px 18px; }
+  .facts .k { color:var(--mut); font-size:11.5px; }
   .ok{color:#86efac} .warn{color:#fdba74}
+  .tl { border-left:2px solid var(--line); margin-left:6px; padding-left:14px; }
+  .tl .ev { position:relative; padding:6px 0; }
+  .tl .ev::before { content:''; position:absolute; left:-21px; top:11px; width:8px; height:8px; border-radius:50%; background:var(--acc); }
+  .tl .ts { font-size:11px; color:var(--mut); }
   a { color:var(--acc); }
 </style>
 </head>
 <body>
 <header>
-  <h1>🛟 L1 HelpDesk Copilot</h1>
+  <h1 onclick="showQueue()">🛟 L1 HelpDesk Copilot</h1>
   <span class="badge">lab / portfolio — not production</span>
   <span id="b-llm" class="badge">llm: …</span>
   <span id="b-graph" class="badge">graph: …</span>
+  <span class="grow"></span>
+  <button class="sm" onclick="showIntake()">+ New ticket</button>
   <span class="badge"><a href="/docs">API /docs</a></span>
 </header>
 
-<div class="wrap">
-  <!-- Left: ticket -> triage / reply -->
+<!-- ============ QUEUE ============ -->
+<div id="queueView" class="full">
+  <div class="row" id="chips" style="margin-bottom:10px"></div>
   <div class="card">
-    <h2>1 · Ticket</h2>
-    <label>Load a sample</label>
-    <select id="sampleSel"><option value="">— select a sample ticket —</option></select>
-    <label>Subject</label>
-    <input id="subject" placeholder="e.g. Can't log in - account locked" />
-    <label>Body</label>
-    <textarea id="body" rows="5" placeholder="Paste the ticket text here…"></textarea>
-    <label>Requester (optional)</label>
-    <input id="requester" placeholder="alice@labtenant.onmicrosoft.com" />
-    <div class="row" style="margin-top:10px">
-      <button onclick="triage()">Classify + draft reply</button>
-      <span id="triageMsg" class="mut"></span>
-    </div>
+    <table>
+      <thead><tr>
+        <th>ID</th><th>Subject</th><th>Requester</th><th>Channel</th><th>Type</th>
+        <th>Category</th><th>Priority</th><th>I×U</th><th>SLA</th><th>Status</th><th>Updated</th>
+      </tr></thead>
+      <tbody id="queueRows"></tbody>
+    </table>
+  </div>
+</div>
 
-    <div id="result" class="hide" style="margin-top:14px">
-      <h2>2 · Triage &amp; citations</h2>
-      <div id="cls"></div>
-      <h2 style="margin-top:12px">3 · L1 reply draft <span id="replySrc" class="mut"></span></h2>
-      <pre id="reply"></pre>
-      <div id="fbRow" class="row hide" style="margin-top:8px">
-        <button class="sec" onclick="sendFeedback('resolved')">✓ Mark resolved</button>
-        <button class="sec" onclick="sendFeedback('escalate')">↑ Escalate</button>
-        <span id="fbMsg" class="mut"></span>
+<!-- ============ DETAIL ============ -->
+<div id="detailView" class="hide">
+  <div class="full" style="padding-bottom:0">
+    <button class="sec sm" onclick="showQueue()">← Queue</button>
+    <h1 id="dTitle" style="font-size:18px;margin:10px 0 0"></h1>
+    <div id="dSub" class="mut" style="margin-top:2px"></div>
+  </div>
+  <div class="wrap">
+    <div class="card">
+      <h2>Ticket</h2>
+      <div class="facts" id="dFacts"></div>
+      <h2 style="margin-top:14px">Description</h2>
+      <pre id="dBody"></pre>
+    </div>
+    <div class="card">
+      <h2>AI copilot <span class="mut" id="aiSrc"></span></h2>
+      <div class="row">
+        <button class="sm" onclick="runTriage()">Run AI triage</button>
+        <button class="sec sm" onclick="draftReply()">Draft reply</button>
+        <span id="aiMsg" class="mut"></span>
+      </div>
+      <div id="aiCls" style="margin-top:10px"></div>
+      <div id="aiReplyWrap" class="hide" style="margin-top:10px">
+        <div class="mut">Draft reply <span id="replySrc"></span></div>
+        <pre id="aiReply"></pre>
+        <div class="row">
+          <button class="sec sm" onclick="sendFeedback('resolved')">✓ Draft looks good</button>
+          <button class="sec sm" onclick="sendFeedback('escalate')">↑ Needs escalation</button>
+          <span id="fbMsg" class="mut"></span>
+        </div>
       </div>
     </div>
   </div>
-
-  <!-- Right: actions + audit -->
-  <div class="card">
-    <h2>4 · Suggested account action (Microsoft Graph)</h2>
-    <p id="suggest" class="mut">Classify a ticket first — a suggested action will appear here.</p>
-    <label>Action type</label>
-    <select id="actType" onchange="renderFields()">
-      <option value="create_user">create_user — create user</option>
-      <option value="reset_password">reset_password — reset password</option>
-      <option value="add_to_group">add_to_group — add to group</option>
-      <option value="assign_license">assign_license — assign license</option>
-    </select>
-    <div id="fields"></div>
-    <div id="guardrail" class="hide" style="margin-top:8px;padding:8px;border:1px solid #854d0e;border-radius:7px;background:#241a05">
-      <span class="warn">⚠ Low classification confidence (<span id="gConf"></span> &lt; threshold <span id="gThr"></span>) — review before any real action.</span>
-      <label style="display:flex;gap:6px;align-items:center;margin-top:6px;cursor:pointer">
-        <input type="checkbox" id="override" style="width:auto"> I've reviewed this manually — run anyway
-      </label>
+  <div class="wrap">
+    <div class="card">
+      <h2>Lifecycle</h2>
+      <div class="row">
+        <button class="sec sm" onclick="setStatus('in_progress')">▶ Start</button>
+        <button class="sec sm" onclick="setStatus('waiting_user')">⏸ Wait on user</button>
+        <button class="sec sm" onclick="setStatus('new')">↺ Reopen</button>
+        <span id="stMsg" class="mut"></span>
+      </div>
+      <hr>
+      <label>Escalate to L2 / specialist — team</label>
+      <select id="escTeam"></select>
+      <label>Escalation reason (why does this need L2?)</label>
+      <textarea id="escReason" rows="2" placeholder="e.g. L1 reset steps exhausted; needs User Administrator role at L2 identity."></textarea>
+      <div class="row" style="margin-top:8px"><button class="sm" onclick="escalate()">↑ Escalate</button><span id="escMsg" class="mut"></span></div>
+      <hr>
+      <label>Resolve — resolution code</label>
+      <select id="resCode"></select>
+      <label>Resolution notes</label>
+      <textarea id="resNotes" rows="2" placeholder="What fixed it / what you told the user."></textarea>
+      <div class="row" style="margin-top:8px"><button class="sm" onclick="resolveTicket()">✓ Resolve</button><span id="resMsg" class="mut"></span></div>
+      <hr>
+      <label>Worklog note</label>
+      <textarea id="noteText" rows="2" placeholder="Add an internal note to the timeline."></textarea>
+      <div class="row" style="margin-top:8px"><button class="sec sm" onclick="addComment()">+ Add note</button><span id="noteMsg" class="mut"></span></div>
     </div>
-    <div class="row" style="margin-top:10px">
-      <button onclick="execAction()">Run (respects dry-run)</button>
-      <span id="actMsg" class="mut"></span>
+    <div class="card">
+      <h2>Account action (Microsoft Graph)</h2>
+      <p id="suggest" class="mut" style="margin-top:0"></p>
+      <label>Action type</label>
+      <select id="actType" onchange="renderFields()">
+        <option value="create_user">create_user — create user</option>
+        <option value="reset_password">reset_password — reset password</option>
+        <option value="add_to_group">add_to_group — add to group</option>
+        <option value="assign_license">assign_license — assign license</option>
+      </select>
+      <div id="fields"></div>
+      <div id="guardrail" class="hide" style="margin-top:8px;padding:8px;border:1px solid #854d0e;border-radius:7px;background:#241a05">
+        <span class="warn">⚠ Low classification confidence (<span id="gConf"></span> &lt; threshold <span id="gThr"></span>) — review before any real action.</span>
+        <label style="display:flex;gap:6px;align-items:center;margin-top:6px;cursor:pointer">
+          <input type="checkbox" id="override" style="width:auto"> I've reviewed this manually — run anyway
+        </label>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <button class="sm" onclick="execAction()">Run (respects dry-run)</button>
+        <span id="actMsg" class="mut"></span>
+      </div>
+      <div id="actResult" class="hide" style="margin-top:10px"></div>
     </div>
-    <div id="actResult" class="hide" style="margin-top:10px"></div>
+  </div>
+  <div class="full">
+    <div class="card">
+      <h2>Timeline</h2>
+      <div class="tl" id="timeline"></div>
+    </div>
+  </div>
+</div>
 
-    <h2 style="margin-top:18px">5 · Audit log <button class="sec" style="padding:3px 10px;font-size:12px" onclick="loadAudit()">Refresh</button></h2>
-    <table><tbody id="audit"><tr><td class="mut">(none yet)</td></tr></tbody></table>
+<!-- ============ INTAKE ============ -->
+<div id="intakeView" class="hide">
+  <div class="full">
+    <button class="sec sm" onclick="showQueue()">← Queue</button>
+  </div>
+  <div class="wrap">
+    <div class="card">
+      <h2>New ticket</h2>
+      <label>Subject</label>
+      <input id="iSubject" placeholder="e.g. Can't log in - account locked" />
+      <label>Description</label>
+      <textarea id="iBody" rows="6" placeholder="Paste the user's request here…"></textarea>
+      <label>Requester (optional)</label>
+      <input id="iRequester" placeholder="alice@contoso-lab.com" />
+      <label>Channel</label>
+      <select id="iChannel"></select>
+      <div class="row" style="margin-top:12px">
+        <button onclick="createTicket()">Create &amp; auto-triage</button>
+        <span id="iMsg" class="mut"></span>
+      </div>
+      <p class="mut" style="margin-top:10px">On create, the ticket is classified (category / priority / impact / urgency / KB) and lands in the queue as <b>New</b>.</p>
+    </div>
   </div>
 </div>
 
 <script>
 const $ = id => document.getElementById(id);
+const esc = s => (s==null?'':String(s)).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+const STATUSES = ["new","in_progress","waiting_user","escalated","resolved"];
+const STATUS_LABEL = {new:"New", in_progress:"In Progress", waiting_user:"Waiting User", escalated:"Escalated", resolved:"Resolved"};
+const CHANNEL_LABEL = {email:"Email", phone:"Phone", portal:"Portal", chat:"Chat", walk_in:"Walk-in"};
+const TEAM_LABEL = {l2_endpoint:"L2 — Endpoint / Desk-side", l2_apps:"L2 — Application Support", network:"Network", identity_security:"Identity & Security", vendor:"Vendor"};
+const RES_LABEL = {
+  resolved_by_kb:"Resolved by KB", password_reset:"Password reset", account_unlocked:"Account unlocked",
+  access_granted:"Access granted", software_reinstall:"Software reinstall/repair", config_change:"Config change",
+  hardware_replaced:"Hardware replaced", user_education:"User education", no_fault_found:"No fault found",
+  duplicate:"Duplicate", workaround_provided:"Workaround provided", escalated_to_l2:"Escalated to L2"
+};
 const ACT_PATH = { create_user:"create-user", reset_password:"reset-password", add_to_group:"add-to-group", assign_license:"assign-license" };
 const FIELDS = {
   create_user:[["display_name","Display name","Maria Chen"],["user_principal_name","UPN","maria@labtenant.onmicrosoft.com"]],
@@ -110,130 +217,275 @@ const FIELDS = {
   add_to_group:[["user","User object id","<userId>"],["group","Group object id","<groupId>"]],
   assign_license:[["user","User (UPN or id)","maria@labtenant.onmicrosoft.com"],["sku","skuId (GUID)","<skuId>"]],
 };
-let lastTicket = {};
-let lastClassification = null;
-let CONF_THRESHOLD = 0.7;
 
+let CONF_THRESHOLD = 0.7;
+let allTickets = [];
+let filter = "all";
+let cur = null;            // current StoredTicket in detail view
+
+// ---------- helpers ----------
+function priPill(p){ return `<span class="pill p-${p}">${p}</span>`; }
+function statusPill(s){ return `<span class="pill s-${s}">${STATUS_LABEL[s]||s}</span>`; }
+function slaPill(r){ return `<span class="pill sla-${r}">${(r||"").replace("_"," ")}</span>`; }
+function typePill(t){ return `<span class="pill t-${t}">${t==="incident"?"INC":"REQ"}</span>`; }
+function iu(t){ return `${(t.impact||"")[0].toUpperCase()}×${(t.urgency||"")[0].toUpperCase()}`; }
+function fmtTs(ts){ return (ts||"").replace("T"," ").replace("+00:00","").replace(/:\d\d$/,""); }
+function dueText(due){
+  if(!due) return "";
+  const diff = new Date(due) - new Date(), h = Math.round(Math.abs(diff)/3.6e6);
+  if (diff >= 0) return h < 1 ? "due < 1h" : `due in ${h}h`;
+  return h < 1 ? "overdue" : `overdue ${h}h`;
+}
+
+function fillSelect(el, entries, sel){
+  el.innerHTML = entries.map(([v,l]) => `<option value="${v}"${v===sel?" selected":""}>${l}</option>`).join("");
+}
+
+// ---------- views ----------
+function show(view){ ["queueView","detailView","intakeView"].forEach(v=>$(v).classList.toggle("hide", v!==view)); }
+function showQueue(){ show("queueView"); loadQueue(); }
+function showIntake(){
+  show("intakeView");
+  $("iSubject").value=""; $("iBody").value=""; $("iRequester").value=""; $("iMsg").textContent="";
+}
+
+// ---------- health ----------
 async function loadHealth(){
   const h = await (await fetch("/healthz")).json();
   $("b-llm").textContent = "llm: " + (h.use_mock_llm || !h.has_anthropic_key ? "rule-baseline" : "claude");
   $("b-graph").textContent = "graph: " + (h.graph_dry_run || !h.graph_creds_ready ? "dry-run" : "LIVE");
   if (typeof h.action_confidence_threshold === "number") CONF_THRESHOLD = h.action_confidence_threshold;
 }
-async function loadSamples(){
-  const ts = await (await fetch("/tickets")).json();
-  ts.forEach(t => { const o=document.createElement("option"); o.value=t.id; o.textContent=`${t.id} — ${t.subject}`; o._t=t; $("sampleSel").appendChild(o); });
-  $("sampleSel").onchange = e => { const o=e.target.selectedOptions[0]; if(o && o._t){ $("subject").value=o._t.subject; $("body").value=o._t.body; $("requester").value=o._t.requester||""; } };
-}
-function priPill(p){ return `<span class="pill p-${p}">priority: ${p}</span>`; }
 
-async function triage(){
-  $("triageMsg").textContent = "Processing…";
-  const ticket = { subject:$("subject").value, body:$("body").value, requester:$("requester").value||null };
-  lastTicket = ticket;
-  const r = await (await fetch("/respond", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(ticket)})).json();
-  $("triageMsg").textContent = "";
-  $("result").classList.remove("hide");
-  const c = r.classification;
-  const cites = r.citations.map(x=>`<span class="pill">${x.id} · ${x.title} <span class="mut">(${x.score})</span></span>`).join(" ");
-  $("cls").innerHTML = `
-    <span class="pill">${c.category}</span>${priPill(c.priority)}
-    <span class="pill">${c.ticket_type}</span>
-    <span class="pill">kb_hit: ${c.kb_hit||"—"}</span>
-    <span class="pill">conf: ${c.confidence}</span>
-    <span class="pill mut">source: ${c.source}</span>
-    <div class="mut" style="margin-top:6px">${c.reasoning||""}</div>
-    <div style="margin-top:8px">retrieval (${r.retriever_mode}): ${cites}</div>`;
-  $("replySrc").textContent = "(" + r.reply.source + ")";
-  $("reply").textContent = r.reply.reply_text;
-  lastClassification = c;
-  $("fbRow").classList.remove("hide");
-  $("fbMsg").textContent = "";
-  applySuggestion(c, ticket);
-  loadAudit();
+// ---------- queue ----------
+async function loadQueue(){
+  allTickets = await (await fetch("/tickets")).json();
+  renderChips(); renderRows();
+}
+function renderChips(){
+  const counts = { all: allTickets.length };
+  STATUSES.forEach(s => counts[s] = allTickets.filter(t=>t.status===s).length);
+  const atRisk = allTickets.filter(t=>t.sla_risk==="at_risk").length;
+  const breached = allTickets.filter(t=>t.sla_risk==="breached").length;
+  const order = ["all", ...STATUSES];
+  $("chips").innerHTML = order.map(s =>
+    `<button class="chip ${filter===s?"on":""}" onclick="setFilter('${s}')">${s==="all"?"All":STATUS_LABEL[s]} <b>${counts[s]}</b></button>`
+  ).join("") + `<span class="grow"></span><span class="mut" style="align-self:center">${atRisk} at risk · ${breached} breached</span>`;
+}
+function setFilter(s){ filter = s; renderChips(); renderRows(); }
+function renderRows(){
+  const rows = allTickets.filter(t => filter==="all" || t.status===filter);
+  if (!rows.length){ $("queueRows").innerHTML = `<tr><td colspan="11" class="mut">No tickets.</td></tr>`; return; }
+  $("queueRows").innerHTML = rows.map(t => `
+    <tr onclick="openDetail('${t.id}')">
+      <td><b>${t.id}</b></td>
+      <td>${esc(t.subject)}</td>
+      <td class="mut">${esc(t.requester||"—")}</td>
+      <td>${CHANNEL_LABEL[t.channel]||t.channel}</td>
+      <td>${typePill(t.ticket_type)}</td>
+      <td>${t.category}</td>
+      <td>${priPill(t.priority)}</td>
+      <td class="mut" title="impact ${t.impact} × urgency ${t.urgency} → ${t.priority_matrix}">${iu(t)}</td>
+      <td>${slaPill(t.sla_risk)}<br><span class="mut" style="font-size:11px">${dueText(t.sla_resolve_due)}</span></td>
+      <td>${statusPill(t.status)}</td>
+      <td class="mut" style="white-space:nowrap">${fmtTs(t.updated_at)}</td>
+    </tr>`).join("");
 }
 
-function applySuggestion(c, ticket){
-  const text = ((ticket.subject||"")+" "+(ticket.body||"")).toLowerCase();
+// ---------- detail ----------
+async function openDetail(id){
+  cur = await (await fetch("/tickets/"+id)).json();
+  resetPanels();      // clear AI output / form fields — only when switching tickets
+  renderDetail();
+  show("detailView");
+  window.scrollTo(0,0);
+}
+function resetPanels(){
+  $("aiCls").innerHTML = ""; $("aiReplyWrap").classList.add("hide");
+  $("aiMsg").textContent=""; $("aiSrc").textContent=""; $("fbMsg").textContent="";
+  $("escReason").value = cur.escalation_reason || "";
+  $("resNotes").value = ""; $("noteText").value="";
+  ["stMsg","escMsg","resMsg","noteMsg","actMsg"].forEach(i=>$(i).textContent="");
+  $("actResult").classList.add("hide");
+}
+async function refresh(updated){
+  cur = updated || await (await fetch("/tickets/"+cur.id)).json();
+  renderDetail();
+}
+function renderDetail(){
+  const t = cur;
+  $("dTitle").textContent = `${t.id} — ${t.subject}`;
+  $("dSub").innerHTML = `${statusPill(t.status)} ${typePill(t.ticket_type)} ${priPill(t.priority)} ${slaPill(t.sla_risk)} <span class="mut">${dueText(t.sla_resolve_due)}</span>`;
+  const matrixNote = t.priority_matrix && t.priority_matrix!==t.priority
+    ? ` <span class="mut">(classified ${t.priority})</span>` : "";
+  const facts = [
+    ["Requester", esc(t.requester||"—")],
+    ["Channel", CHANNEL_LABEL[t.channel]||t.channel],
+    ["Assignee", esc(t.assignee||"unassigned")],
+    ["Category", t.category],
+    ["Type", t.ticket_type],
+    ["Impact × Urgency", `${t.impact} × ${t.urgency}`],
+    ["Priority (classified)", priPill(t.priority)],
+    ["Priority (Impact×Urgency, ITIL)", priPill(t.priority_matrix||t.priority)+matrixNote],
+    ["KB hit", t.kb_hit||"—"],
+    ["Confidence", t.confidence],
+    ["Created", fmtTs(t.created_at)],
+    ["SLA resolve due", `${fmtTs(t.sla_resolve_due)} · ${slaPill(t.sla_risk)}`],
+  ];
+  if (t.status==="escalated"){
+    facts.push(["Escalated to", `<span class="warn">${TEAM_LABEL[t.escalation_team]||t.escalation_team||"—"}</span>`]);
+    facts.push(["Escalation reason", esc(t.escalation_reason||"—")]);
+  }
+  if (t.status==="resolved"){
+    facts.push(["Resolution code", `<span class="ok">${RES_LABEL[t.resolution_code]||t.resolution_code||"—"}</span>`]);
+    facts.push(["Resolution notes", esc(t.resolution_notes||"—")]);
+    facts.push(["Resolved at", fmtTs(t.resolved_at)]);
+  }
+  $("dFacts").innerHTML = facts.map(([k,v]) => `<div class="k">${k}</div><div>${v}</div>`).join("");
+  $("dBody").textContent = t.body || "";
+  applySuggestion(t);
+  renderTimeline(t.timeline||[]);
+}
+function renderTimeline(events){
+  if (!events.length){ $("timeline").innerHTML = `<div class="mut">No events.</div>`; return; }
+  $("timeline").innerHTML = events.map(e => `
+    <div class="ev">
+      <div class="ts">${fmtTs(e.ts)} · <b>${e.type}</b> · ${esc(e.actor)}</div>
+      <div>${esc(e.summary)}</div>
+    </div>`).join("");
+}
+
+// ---------- AI copilot ----------
+async function runTriage(){
+  $("aiMsg").textContent="Triaging…";
+  const t = await (await fetch(`/tickets/${cur.id}/triage`, {method:"POST"})).json();
+  $("aiMsg").textContent="";
+  refresh(t);          // re-render facts + timeline first (synchronous when passed a ticket)
+  renderClsLine(t);    // then show the fresh triage line
+}
+function renderClsLine(t){
+  $("aiCls").innerHTML =
+    `<span class="pill">${t.category}</span>${priPill(t.priority)}${typePill(t.ticket_type)}` +
+    `<span class="pill">impact: ${t.impact}</span><span class="pill">urgency: ${t.urgency}</span>` +
+    `<span class="pill">kb: ${t.kb_hit||"—"}</span><span class="pill">conf: ${t.confidence}</span>`;
+}
+async function draftReply(){
+  $("aiMsg").textContent="Drafting…";
+  const r = await (await fetch(`/tickets/${cur.id}/respond`, {method:"POST"})).json();
+  $("aiMsg").textContent="";
+  await refresh();   // re-render (reply_drafted now on timeline) before populating the panel
+  const cites = (r.citations||[]).map(x=>`<span class="pill">${x.id} · ${esc(x.title)} <span class="mut">(${x.score})</span></span>`).join(" ");
+  $("aiCls").innerHTML = (cites ? `<div class="mut" style="margin-bottom:4px">retrieval (${r.retriever_mode}): ${cites}</div>` : "") + $("aiCls").innerHTML;
+  $("aiReplyWrap").classList.remove("hide");
+  $("replySrc").textContent = "("+r.reply.source+")";
+  $("aiReply").textContent = r.reply.reply_text;
+  $("fbMsg").textContent="";
+}
+async function sendFeedback(status){
+  await fetch("/feedback", {method:"POST", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({ ticket_subject: cur.subject||"", status,
+      category: cur.category, priority: cur.priority, ticket_id: cur.id })});
+  $("fbMsg").textContent = status==="resolved" ? "Logged: draft looks good ✓" : "Logged: needs escalation ↑";
+  refresh();
+}
+
+// ---------- lifecycle ----------
+async function setStatus(status){
+  $("stMsg").textContent="…";
+  const t = await postJSON(`/tickets/${cur.id}/status`, {status});
+  $("stMsg").textContent = "→ "+(STATUS_LABEL[status]||status);
+  refresh(t);
+}
+async function escalate(){
+  const reason = $("escReason").value.trim();
+  if(!reason){ $("escMsg").innerHTML='<span class="warn">Add a reason first.</span>'; return; }
+  $("escMsg").textContent="…";
+  const t = await postJSON(`/tickets/${cur.id}/escalate`, {team:$("escTeam").value, reason});
+  $("escMsg").textContent="Escalated ↑";
+  refresh(t);
+}
+async function resolveTicket(){
+  $("resMsg").textContent="…";
+  const t = await postJSON(`/tickets/${cur.id}/resolve`, {resolution_code:$("resCode").value, notes:$("resNotes").value.trim()||null});
+  $("resMsg").textContent="Resolved ✓";
+  refresh(t);
+}
+async function addComment(){
+  const note = $("noteText").value.trim();
+  if(!note){ $("noteMsg").innerHTML='<span class="warn">Empty note.</span>'; return; }
+  $("noteMsg").textContent="…";
+  const t = await postJSON(`/tickets/${cur.id}/comment`, {note});
+  $("noteText").value=""; $("noteMsg").textContent="Added";
+  refresh(t);
+}
+async function postJSON(url, body){
+  return (await fetch(url, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)})).json();
+}
+
+// ---------- intake ----------
+async function createTicket(){
+  if(!$("iBody").value.trim()){ $("iMsg").innerHTML='<span class="warn">Description is required.</span>'; return; }
+  $("iMsg").textContent="Creating…";
+  const t = await postJSON("/tickets", {
+    subject:$("iSubject").value, body:$("iBody").value,
+    requester:$("iRequester").value||null, channel:$("iChannel").value });
+  openDetail(t.id);
+}
+
+// ---------- Graph account action ----------
+function applySuggestion(t){
+  const text = ((t.subject||"")+" "+(t.body||"")).toLowerCase();
   let act = null;
   if (/new hire|onboard|new starter|create (her|his|an|a) account|set up (a )?(temporary )?account/.test(text)) act="create_user";
   else if (/reset|forgot.*password|locked|unlock/.test(text)) act="reset_password";
   else if (/add .* to|distribution|shared mailbox|join .* group|members? to/.test(text)) act="add_to_group";
   else if (/licen[sc]e/.test(text)) act="assign_license";
-  if (act){ $("actType").value = act; $("suggest").innerHTML = `Suggested: <b>${act}</b> (from triage ${c.category}/${c.ticket_type})`; }
+  if (act){ $("actType").value = act; $("suggest").innerHTML = `Suggested: <b>${act}</b> (from triage ${t.category}/${t.ticket_type})`; }
   else $("suggest").textContent = "This ticket doesn't look like an automatable account action.";
-  renderFields(ticket);
+  renderFields(t);
 }
-
-function renderFields(ticket){
-  const t = ticket || lastTicket || {};
+function renderFields(t){
+  t = t || cur || {};
   const act = $("actType").value;
   $("fields").innerHTML = FIELDS[act].map(([k,lab,ph])=>{
     let v = "";
     if ((k==="user"||k==="user_principal_name") && t.requester) v = t.requester;
-    return `<label>${lab}</label><input id="f_${k}" value="${v}" placeholder="${ph}" />`;
+    return `<label>${lab}</label><input id="f_${k}" value="${esc(v)}" placeholder="${ph}" />`;
   }).join("");
-  updateGuardrail(lastClassification);
+  updateGuardrail();
 }
-
-function updateGuardrail(c){
-  const low = c && typeof c.confidence === "number" && c.confidence < CONF_THRESHOLD;
+function updateGuardrail(){
+  const low = cur && typeof cur.confidence==="number" && cur.confidence < CONF_THRESHOLD;
   $("guardrail").classList.toggle("hide", !low);
-  if (low){
-    $("gConf").textContent = c.confidence;
-    $("gThr").textContent = CONF_THRESHOLD;
-    $("override").checked = false;
-  }
+  if (low){ $("gConf").textContent = cur.confidence; $("gThr").textContent = CONF_THRESHOLD; $("override").checked=false; }
 }
-
-async function sendFeedback(status){
-  if (!lastTicket.subject && !lastTicket.body) return;
-  await fetch("/feedback", {method:"POST", headers:{"Content-Type":"application/json"},
-    body: JSON.stringify({
-      ticket_subject: lastTicket.subject || "",
-      status,
-      category: lastClassification ? lastClassification.category : null,
-      priority: lastClassification ? lastClassification.priority : null,
-    })});
-  $("fbMsg").textContent = status === "resolved" ? "Logged: resolved ✓" : "Logged: escalate ↑";
-  loadAudit();
-}
-
 async function execAction(){
   const act = $("actType").value;
-  if (lastClassification && lastClassification.confidence < CONF_THRESHOLD && !$("override").checked){
+  if (cur && cur.confidence < CONF_THRESHOLD && !$("override").checked){
     $("actMsg").innerHTML = '<span class="warn">Confidence too low — tick "I\'ve reviewed this manually" to run.</span>';
     return;
   }
-  const body = {};
+  const body = { ticket_id: cur ? cur.id : null };
   FIELDS[act].forEach(([k])=>{ const el=$("f_"+k); if(el && el.value) body[k]=el.value; });
   $("actMsg").textContent = "Running…";
-  const r = await (await fetch("/actions/"+ACT_PATH[act], {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)})).json();
+  const r = await postJSON("/actions/"+ACT_PATH[act], body);
   $("actMsg").textContent = "";
   $("actResult").classList.remove("hide");
   const tag = r.dry_run ? '<span class="pill warn">DRY-RUN</span>' : '<span class="pill ok">LIVE</span>';
   const ok = r.success ? '<span class="ok">success</span>' : '<span class="warn">failed</span>';
-  let pw = r.generated_password ? `<div>Temp password (shown once, not audited): <b>${r.generated_password}</b></div>` : "";
-  let err = r.error ? `<div class="warn">error: ${r.error}</div>` : "";
-  $("actResult").innerHTML = `${tag} ${ok} — ${r.summary}${pw}${err}
-    <div class="mut" style="margin-top:6px">Graph request to be sent:</div>
-    <pre>${JSON.stringify(r.request, null, 2)}</pre>`;
-  loadAudit();
+  const pw = r.generated_password ? `<div>Temp password (shown once, not audited): <b>${esc(r.generated_password)}</b></div>` : "";
+  const err = r.error ? `<div class="warn">error: ${esc(r.error)}</div>` : "";
+  $("actResult").innerHTML = `${tag} ${ok} — ${esc(r.summary)}${pw}${err}
+    <div class="mut" style="margin-top:6px">Graph request:</div>
+    <pre>${esc(JSON.stringify(r.request, null, 2))}</pre>`;
+  refresh();   // graph_action now on timeline
 }
 
-async function loadAudit(){
-  const ev = await (await fetch("/audit?limit=12")).json();
-  if(!ev.length){ $("audit").innerHTML = '<tr><td class="mut">(none yet)</td></tr>'; return; }
-  $("audit").innerHTML = ev.map(e=>{
-    let d;
-    if (e.kind==="graph_action") d = `${e.dry_run?"dry-run":"LIVE"} · ${e.summary} · ${e.success?"ok":"fail"}`;
-    else if (e.kind==="feedback") d = `${e.status==="resolved"?"resolved ✓":"escalate ↑"} — ${e.ticket_subject||""}`;
-    else d = `${(e.classification&&e.classification.category)||""} / ${(e.classification&&e.classification.priority)||""} — ${(e.ticket&&e.ticket.subject)||""}`;
-    return `<tr><td class="mut" style="white-space:nowrap">${(e.ts||"").replace("T"," ").replace("+00:00","")}</td><td><b>${e.kind}</b><br>${d}</td></tr>`;
-  }).join("");
-}
-
-loadHealth(); loadSamples(); renderFields(); loadAudit();
+// ---------- init ----------
+fillSelect($("escTeam"), Object.keys(TEAM_LABEL).map(k=>[k,TEAM_LABEL[k]]));
+fillSelect($("resCode"), Object.keys(RES_LABEL).map(k=>[k,RES_LABEL[k]]));
+fillSelect($("iChannel"), Object.keys(CHANNEL_LABEL).map(k=>[k,CHANNEL_LABEL[k]]), "portal");
+loadHealth(); showQueue();
 </script>
 </body>
 </html>
