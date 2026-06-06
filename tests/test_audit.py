@@ -1,5 +1,4 @@
 """Audit log tests."""
-import json
 import sqlite3
 
 from app.audit import log_event, read_events

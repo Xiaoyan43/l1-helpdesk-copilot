@@ -38,6 +38,7 @@ def _token() -> str:
     from azure.identity import ClientSecretCredential
 
     s = get_settings()
+    assert s.azure_tenant_id and s.azure_client_id and s.azure_client_secret
     cred = ClientSecretCredential(s.azure_tenant_id, s.azure_client_id, s.azure_client_secret)
     return cred.get_token("https://graph.microsoft.com/.default").token
 

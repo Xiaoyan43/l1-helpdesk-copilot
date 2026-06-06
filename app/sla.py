@@ -3,7 +3,7 @@
 刻意简化的 lab 模型：用「自工单创建起的固定挂钟分钟数」算 SLA 截止时间，
 不考虑工作时间/营业日历（那属于 out of scope）。所有时间戳用 UTC ISO 字符串。
 """
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from .models import Impact, Priority, TicketStatus, Urgency
 
@@ -30,7 +30,7 @@ def _parse(ts: str | None) -> datetime | None:
 
 def due_dates(created_at: str, priority: Priority) -> tuple[str, str]:
     """返回 (响应截止, 解决截止) 的 ISO 字符串。"""
-    start = _parse(created_at) or datetime.now(timezone.utc)
+    start = _parse(created_at) or datetime.now(UTC)
     resp_min, res_min = SLA_TARGETS.get(priority, SLA_TARGETS[Priority.medium])
     response_due = (start + timedelta(minutes=resp_min)).isoformat(timespec="seconds")
     resolve_due = (start + timedelta(minutes=res_min)).isoformat(timespec="seconds")
@@ -49,7 +49,7 @@ def sla_risk(
     已解决：met（按时）/ missed（超时）。
     进行中：on_track / at_risk（已过 75% 时限）/ breached（已超时）。
     """
-    now = now or datetime.now(timezone.utc)
+    now = now or datetime.now(UTC)
     status = status.value if isinstance(status, TicketStatus) else status
     due = _parse(resolve_due)
 

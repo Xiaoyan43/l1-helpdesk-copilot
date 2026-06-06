@@ -6,7 +6,7 @@ Plaintext passwords are never stored (see graph_actions._run).
 import json
 import sqlite3
 import threading
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from .config import get_settings
@@ -42,7 +42,7 @@ def init_audit_db() -> None:
 
 def log_event(kind: str, **data) -> dict:
     entry = {
-        "ts": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "ts": datetime.now(UTC).isoformat(timespec="seconds"),
         "kind": kind,
         **data,
     }

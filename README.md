@@ -89,8 +89,10 @@ Reproduce: `python -m eval.run_eval --engine both --show-errors`
 pip install -r requirements-dev.txt
 pytest -q
 ruff check .
+mypy
+pre-commit run --all-files   # optional local hook pass
 ```
-CI runs ruff + pytest on every push/PR to `main` (see [`.github/workflows/ci.yml`](.github/workflows/ci.yml)).
+CI runs ruff + mypy + pytest on every push/PR to `main` (see [`.github/workflows/ci.yml`](.github/workflows/ci.yml)).
 
 **Honest notes / limitations:**
 - The test set is **60 tickets, single-annotator** — for a portfolio demo, not a rigorous benchmark; `temperature=0` makes it reproducible, but on a small set a few points shouldn't be over-read.

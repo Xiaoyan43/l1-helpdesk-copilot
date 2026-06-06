@@ -1,6 +1,5 @@
 """Shared pytest fixtures — isolate settings and side-effect paths per test."""
 import pytest
-
 from app.audit import init_audit_db
 from app.config import get_settings
 from app.store import init_db

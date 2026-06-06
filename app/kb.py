@@ -49,7 +49,7 @@ class Retriever:
     def _init_backend(self) -> None:
         try:
             import numpy as np
-            from sentence_transformers import SentenceTransformer  # type: ignore
+            from sentence_transformers import SentenceTransformer
 
             self._np = np
             self._model = SentenceTransformer("all-MiniLM-L6-v2")
@@ -72,8 +72,8 @@ class Retriever:
             order = self._np.argsort(-scores)[:k]
             return [(self.articles[i], float(scores[i])) for i in order]
         scores = self._bm25.get_scores(_tokenize(query))
-        order = sorted(range(len(scores)), key=lambda i: -scores[i])[:k]
-        return [(self.articles[i], float(scores[i])) for i in order]
+        bm_order = sorted(range(len(scores)), key=lambda i: -scores[i])[:k]
+        return [(self.articles[i], float(scores[i])) for i in bm_order]
 
 
 _retriever: Retriever | None = None

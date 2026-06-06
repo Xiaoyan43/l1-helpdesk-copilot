@@ -1,16 +1,19 @@
 """Streaming reply smoke tests."""
 import json
 
-from fastapi.testclient import TestClient
-
 from app import store
 from app.main import app
 from app.models import Category, Classification, Impact, Priority, Ticket, TicketType, Urgency
 from app.responder import stream_reply
+from fastapi.testclient import TestClient
 
 
 def test_stream_reply_mock_yields_text():
-    ticket = Ticket(subject="VPN drops", body="My vpn keeps disconnecting at home.", requester="u@lab.com")
+    ticket = Ticket(
+        subject="VPN drops",
+        body="My vpn keeps disconnecting at home.",
+        requester="u@lab.com",
+    )
     cl = Classification(
         category=Category.network,
         priority=Priority.medium,

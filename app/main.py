@@ -1,6 +1,6 @@
 """FastAPI 入口。分类 + RAG 回复 + Graph 动作 + 工单生命周期 + 审计 + 单页 UI。"""
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
@@ -46,7 +46,9 @@ from .responder import generate_reply, reply_source, stream_reply
 
 app = FastAPI(
     title="L1 HelpDesk Copilot (lab / portfolio)",
-    description="Personal portfolio project — runs only on sample tickets and a lab tenant, not production.",
+    description=(
+        "Personal portfolio project — runs only on sample tickets and a lab tenant, not production."
+    ),
     version="0.2.0",
 )
 
@@ -60,7 +62,7 @@ _INDEX = Path(__file__).resolve().parent / "static" / "index.html"
 
 
 def _now() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+    return datetime.now(UTC).isoformat(timespec="seconds")
 
 
 def _require(ticket_id: str) -> StoredTicket:

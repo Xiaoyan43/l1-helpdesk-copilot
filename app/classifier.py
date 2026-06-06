@@ -226,7 +226,7 @@ def llm_classify(ticket: Ticket) -> Classification:
     """
     s = get_settings()
     catalog = "\n".join(f"{kid}: {title}" for kid, title in KB_CATALOG.items())
-    resp = _get_client().messages.create(
+    resp = _get_client().messages.create(  # type: ignore[call-overload]
         model=s.classify_model,
         max_tokens=400,
         temperature=0,   # 分类要可复现；Haiku 4.5 支持 temperature

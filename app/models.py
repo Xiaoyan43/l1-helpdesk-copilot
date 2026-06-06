@@ -1,10 +1,10 @@
 """贯穿全应用的数据模型（pydantic）。"""
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import BaseModel, Field
 
 
-class Category(str, Enum):
+class Category(StrEnum):
     account_access = "account_access"   # 账号 / 登录 / 权限
     hardware = "hardware"               # 笔记本、外设、打印机
     software = "software"               # 应用安装 / 报错
@@ -14,20 +14,20 @@ class Category(str, Enum):
     other = "other"
 
 
-class Priority(str, Enum):
+class Priority(StrEnum):
     low = "low"
     medium = "medium"
     high = "high"
     critical = "critical"
 
 
-class TicketType(str, Enum):
+class TicketType(StrEnum):
     incident = "incident"   # 坏了 / 出问题
     request = "request"     # 想要 / 申请某项服务
 
 
 # --- Service Desk 工单生命周期 / ITSM 字段 ---
-class TicketStatus(str, Enum):
+class TicketStatus(StrEnum):
     new = "new"
     in_progress = "in_progress"
     waiting_user = "waiting_user"
@@ -35,21 +35,21 @@ class TicketStatus(str, Enum):
     resolved = "resolved"
 
 
-class Impact(str, Enum):
+class Impact(StrEnum):
     """受影响范围：single user → 整个部门/站点。"""
     low = "low"        # 单个用户、有 workaround
     medium = "medium"  # 一组用户 / 单个业务应用
     high = "high"      # 整个部门 / 站点 / 关键系统
 
 
-class Urgency(str, Enum):
+class Urgency(StrEnum):
     """多快需要解决。"""
     low = "low"
     medium = "medium"
     high = "high"
 
 
-class Channel(str, Enum):
+class Channel(StrEnum):
     """工单来源渠道。"""
     email = "email"
     phone = "phone"
@@ -58,7 +58,7 @@ class Channel(str, Enum):
     walk_in = "walk_in"
 
 
-class EscalationTeam(str, Enum):
+class EscalationTeam(StrEnum):
     """升级到的 L2 / 专业组。"""
     l2_endpoint = "l2_endpoint"            # 桌面 / 终端
     l2_apps = "l2_apps"                    # 应用支持
@@ -67,7 +67,7 @@ class EscalationTeam(str, Enum):
     vendor = "vendor"                      # 第三方厂商
 
 
-class ResolutionCode(str, Enum):
+class ResolutionCode(StrEnum):
     """关单代码（最后怎么解决的）。"""
     resolved_by_kb = "resolved_by_kb"
     password_reset = "password_reset"
@@ -186,7 +186,7 @@ class ActionResult(BaseModel):
 class TimelineEvent(BaseModel):
     """工单自身历史里的一条事件（区别于全局 audit_events 表）。"""
     ts: str
-    type: str            # created | triaged | status_change | comment | escalated | resolved | graph_action | reply_drafted | feedback
+    type: str  # e.g. created, triaged, status_change, graph_action, feedback
     actor: str = "L1 Agent"
     summary: str = ""
     detail: dict | None = None

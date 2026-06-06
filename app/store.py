@@ -10,7 +10,7 @@
 import json
 import sqlite3
 import threading
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from enum import Enum
 from pathlib import Path
 
@@ -23,11 +23,15 @@ from .models import (
     Channel,
     Classification,
     EscalationTeam,
+    Impact,
+    Priority,
     ResolutionCode,
     StoredTicket,
     Ticket,
     TicketStatus,
+    TicketType,
     TimelineEvent,
+    Urgency,
 )
 
 _lock = threading.Lock()
@@ -53,7 +57,7 @@ def _connect() -> sqlite3.Connection:
 
 
 def _now() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+    return datetime.now(UTC).isoformat(timespec="seconds")
 
 
 def _v(x):
@@ -92,19 +96,24 @@ def init_db() -> None:
 def _row_to_ticket(row: sqlite3.Row, timeline: list[TimelineEvent] | None = None) -> StoredTicket:
     d = dict(row)
     impact, urgency = d["impact"], d["urgency"]
+    status = d.get("status") or TicketStatus.new.value
     risk = sla.sla_risk(
-        d.get("sla_resolve_due"), d.get("status"),
+        d.get("sla_resolve_due"), status,
         created_at=d.get("created_at"), resolved_at=d.get("resolved_at"),
     )
     matrix = sla.priority_from_matrix(impact, urgency) if impact and urgency else None
     return StoredTicket(
         id=d["id"], subject=d["subject"] or "", body=d["body"] or "",
-        requester=d["requester"], channel=d["channel"] or Channel.portal.value,
-        assignee=d["assignee"], status=d["status"] or TicketStatus.new.value,
-        category=d["category"] or Category.other.value,
-        ticket_type=d["ticket_type"] or "incident",
-        impact=impact or "medium", urgency=urgency or "medium",
-        priority=d["priority"] or "medium", priority_matrix=matrix,
+        requester=d["requester"],
+        channel=Channel(d["channel"]) if d["channel"] else Channel.portal,
+        assignee=d["assignee"],
+        status=TicketStatus(status),
+        category=Category(d["category"]) if d["category"] else Category.other,
+        ticket_type=TicketType(d["ticket_type"]) if d["ticket_type"] else TicketType.incident,
+        impact=Impact(impact) if impact else Impact.medium,
+        urgency=Urgency(urgency) if urgency else Urgency.medium,
+        priority=Priority(d["priority"]) if d["priority"] else Priority.medium,
+        priority_matrix=matrix,
         kb_hit=d["kb_hit"], confidence=d["confidence"] if d["confidence"] is not None else 0.5,
         escalation_team=d["escalation_team"], escalation_reason=d["escalation_reason"],
         resolution_code=d["resolution_code"], resolution_notes=d["resolution_notes"],
@@ -197,7 +206,9 @@ def create_ticket(
     }
     cols.update(extra)
     _insert(cols)
-    return get_ticket(tid)
+    stored = get_ticket(tid)
+    assert stored is not None
+    return stored
 
 
 def update_ticket(ticket_id: str, **fields) -> StoredTicket | None:
@@ -223,8 +234,12 @@ _ESC_TEAM_BY_CAT = {
     Category.other: EscalationTeam.l2_apps,
 }
 _ESC_REASON_BY_CAT = {
-    Category.account_access: "L1 password/unlock steps exhausted; needs User Administrator role at L2 identity.",
-    Category.security: "Possible security incident — handing to identity & security for investigation.",
+    Category.account_access: (
+        "L1 password/unlock steps exhausted; needs User Administrator role at L2 identity."
+    ),
+    Category.security: (
+        "Possible security incident — handing to identity & security for investigation."
+    ),
     Category.network: "Beyond L1 (VPN/routing); needs the network team to inspect the gateway.",
     Category.email: "Mail-flow / mailbox config beyond L1 tooling; routing to apps support.",
     Category.software: "Reinstall/repair didn't fix it; app support to check server-side config.",
@@ -257,10 +272,11 @@ def seed_if_empty() -> int:
 
     # 按各自 SLA 解决目标的不同比例回推 created_at，让风险标签有意识地分布：
     # < .75 → on_track，.75–1.0 → at_risk，> 1.0 → breached（resolved 另算）。
-    _AGE_FRACTIONS = [0.3, 0.5, 0.7, 0.85, 0.95, 1.2]   # ≈ 50% on_track / 33% at_risk / 17% breached
+    # ≈ 50% on_track / 33% at_risk / 17% breached
+    _AGE_FRACTIONS = [0.3, 0.5, 0.7, 0.85, 0.95, 1.2]
 
     tickets = load_tickets_csv()
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     inserted = 0
     for idx, t in enumerate(tickets):
         cl = rule_based_classify(t)           # 规则基线：离线、确定、不烧 API
@@ -296,7 +312,9 @@ def seed_if_empty() -> int:
         if status == TicketStatus.resolved:
             code = _RES_CODE_BY_CAT.get(cat, ResolutionCode.resolved_by_kb)
             extra["resolution_code"] = code
-            extra["resolution_notes"] = "Resolved at L1 using the KB runbook; confirmed with the user."
+            extra["resolution_notes"] = (
+                "Resolved at L1 using the KB runbook; confirmed with the user."
+            )
             # 一半按时关单(met)，一半略超(missed)，让 SLA 统计有对比
             factor = 0.6 if idx % 2 == 0 else 1.4
             resolved_at = (datetime.fromisoformat(created)
@@ -305,8 +323,8 @@ def seed_if_empty() -> int:
             extra["updated_at"] = resolved_at
             events.append(("resolved", "L1 Agent", f"Resolved ({code.value})"))
 
-        create_ticket(t, cl, channel=channel, status=status, created_at=created, **extra)
+        stored = create_ticket(t, cl, channel=channel, status=status, created_at=created, **extra)
         for etype, actor, summary in events:
-            add_event(t.id, etype, summary, actor=actor)
+            add_event(stored.id, etype, summary, actor=actor)
         inserted += 1
     return inserted

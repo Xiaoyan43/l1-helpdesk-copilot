@@ -7,7 +7,8 @@
     python -m eval.run_eval --engine both --show-errors
 
 诚实声明：测试集 60 条、单人标注，数字仅供作品演示，非生产评测。
-gold_kb_hit 规则：有文章 L1 步骤可直接处理 → 填 KB id；离boarding/HR/LOB  outage 等无文章 → 空（评测时归一化为 NONE）。
+gold_kb_hit 规则：有文章 L1 步骤可直接处理 → 填 KB id；
+离boarding/HR/LOB outage 等无文章 → 空（评测时归一化为 NONE）。
 """
 import argparse
 import json
@@ -114,7 +115,8 @@ def _print_report(res: dict, show_errors: bool, fields: list[str] | None = None)
                 continue
             print(f"  {f} 错误（{len(errs)}）：")
             for e in errs:
-                print(f"    {e['id']} 预测 {str(e['pred']):14} 应为 {str(e['gold']):14} | {e['subject']}")
+                pred, gold, subj = e["pred"], e["gold"], e["subject"]
+                print(f"    {e['id']} 预测 {str(pred):14} 应为 {str(gold):14} | {subj}")
 
 
 def main() -> None:

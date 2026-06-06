@@ -37,7 +37,7 @@ This is a portfolio/lab MVP — keep changes scoped; flag scope creep.
 - [x] pytest suite (rule baseline, retriever, graph dry-run + redaction, audit). [high][M]
 - [x] GitHub Actions CI (ruff lint + pytest on push) + status badge. [high][S]
 - [x] Dockerfile (reproducible / alternative deploy). [low][S]
-- [ ] ruff + mypy + pre-commit. [low][S]
+- [x] ruff + mypy + pre-commit. [low][S]
 - [ ] Prompt caching — only worthwhile once system+tools exceed the cacheable min (~4096 tok for Haiku); currently below it, so skipped on purpose. Revisit if prompts grow. [low][S]
 - [ ] Rate limiting on the public demo IF it ever runs real Claude (cost/abuse guard). [med][S]
 
