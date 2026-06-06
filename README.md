@@ -119,8 +119,6 @@ free tenant has no paid SKUs. Setup: [`docs/m365-setup.md`](docs/m365-setup.md).
   computed **SLA risk**, escalation reason + L2 team, resolution codes, and a per-ticket **timeline**
 - [x] Extras · **Confidence-threshold guardrail** (low-confidence triage blocks real actions until human review) + **reply feedback buttons** (resolved / escalate, written to the audit log)
 
-> Interview prep: [`docs/pitch.md`](docs/pitch.md) · demo recording shot list: [`docs/demo-script.md`](docs/demo-script.md)
-
 ## Layout
 ```
 app/        FastAPI app: config / models / classifier / kb / responder / graph_actions / audit / main
@@ -128,5 +126,5 @@ app/        FastAPI app: config / models / classifier / kb / responder / graph_a
 kb/         markdown knowledge-base articles
 data/       sample tickets CSV (with gold labels) — also seeds the ticket queue on first run
 eval/       eval script (writes eval/last_results.json, gitignored)
-docs/       setup guide, interview pitch, demo script
+docs/       setup guide (m365-setup.md), keep-warm pinger notes
 ```

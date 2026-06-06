@@ -42,7 +42,7 @@ This is a portfolio/lab MVP — keep changes scoped; flag scope creep.
 - [ ] Rate limiting on the public demo IF it ever runs real Claude (cost/abuse guard). [med][S]
 
 ## Polish / ops
-- [ ] Translate code comments + `docs/pitch.md` / `docs/demo-script.md` to English, OR remove those CN prep docs from the public repo (they're personal notes). [low][S]
+- [x] Translate code comments + `docs/pitch.md` / `docs/demo-script.md` to English, OR remove those CN prep docs from the public repo (they're personal notes). [low][S]
 - [x] Keep-warm pinger for the free demo (e.g. cron-job.org → `/healthz` every ~14 min) so HR doesn't hit the ~30–60s cold start. [low][S]
 - [ ] Optionally run the live demo on real Claude: add `ANTHROPIC_API_KEY` in Render + set `USE_MOCK_LLM=false` (set an Anthropic monthly spend cap first). Keep `GRAPH_DRY_RUN=true` in public. [med][S]
 
