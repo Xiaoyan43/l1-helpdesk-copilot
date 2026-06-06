@@ -1,0 +1,8 @@
+# Keep secrets & local data out of Cursor's AI context (it still runs locally).
+.env
+tickets.db
+tickets.db-wal
+tickets.db-shm
+audit_log.jsonl
+eval/last_results.json
+.venv/
