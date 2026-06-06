@@ -48,8 +48,8 @@ class Retriever:
 
     def _init_backend(self) -> None:
         try:
-            from sentence_transformers import SentenceTransformer  # type: ignore
             import numpy as np
+            from sentence_transformers import SentenceTransformer  # type: ignore
 
             self._np = np
             self._model = SentenceTransformer("all-MiniLM-L6-v2")

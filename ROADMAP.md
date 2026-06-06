@@ -9,7 +9,7 @@ This is a portfolio/lab MVP — keep changes scoped; flag scope creep.
 > "persist audit to SQLite" below is a smaller lift (move the jsonl audit into the same DB).
 
 ## ⭐ Suggested next 3 (best portfolio ROf)
-1. **Tests + CI** — pytest (classifier baseline, KB retrieval, Graph dry-run, audit redaction) + GitHub Actions. A green CI badge on the repo is a strong credibility signal. [high][M]
+1. ~~**Tests + CI**~~ — **done:** pytest (classifier baseline, KB retrieval, Graph dry-run, audit redaction) + GitHub Actions (`ruff` + pytest) + README badge. [high][M]
 2. **README hero screenshot** — save a UI screenshot to `docs/img/` and embed at the top of README. Instant repo polish. [med][S]
 3. **Grow + clean the eval set** — expand KB to ~10–12 articles and re-clean `kb_hit` gold labels (the noisiest field); optionally grow the test set past 50. Lifts the weakest honest metric and improves RAG. [high][M]
 
@@ -29,8 +29,8 @@ This is a portfolio/lab MVP — keep changes scoped; flag scope creep.
 - [ ] Persist audit to SQLite/Postgres for the deployed version (jsonl is ephemeral on Render). [med][M]
 
 ## Engineering / hardening
-- [ ] pytest suite (rule baseline, retriever, graph dry-run + redaction, audit). [high][M]
-- [ ] GitHub Actions CI (ruff lint + pytest on push) + status badge. [high][S]
+- [x] pytest suite (rule baseline, retriever, graph dry-run + redaction, audit). [high][M]
+- [x] GitHub Actions CI (ruff lint + pytest on push) + status badge. [high][S]
 - [ ] Dockerfile (reproducible / alternative deploy). [low][S]
 - [ ] ruff + mypy + pre-commit. [low][S]
 - [ ] Prompt caching — only worthwhile once system+tools exceed the cacheable min (~4096 tok for Haiku); currently below it, so skipped on purpose. Revisit if prompts grow. [low][S]

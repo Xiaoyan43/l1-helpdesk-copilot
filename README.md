@@ -1,5 +1,7 @@
 # L1 HelpDesk Copilot
 
+![CI](https://github.com/Xiaoyan43/l1-helpdesk-copilot/actions/workflows/ci.yml/badge.svg)
+
 > ⚠️ **Personal portfolio / lab only — not a production system.**
 > All LLM calls go to the Anthropic API; all Microsoft Graph calls target a **free, isolated
 > Microsoft Entra lab tenant**, default `GRAPH_DRY_RUN=true` (simulate, don't modify the tenant).
@@ -70,6 +72,14 @@ structured output, `temperature=0` for reproducibility):
 | category macro-F1 | 61% | **81%** | +20 |
 
 Reproduce: `python -m eval.run_eval --engine both --show-errors`
+
+## Tests
+```bash
+pip install -r requirements-dev.txt
+pytest -q
+ruff check .
+```
+CI runs ruff + pytest on every push/PR to `main` (see [`.github/workflows/ci.yml`](.github/workflows/ci.yml)).
 
 **Honest notes / limitations:**
 - The test set is only **50 tickets, single-annotator** — for a portfolio demo, not a rigorous benchmark; `temperature=0` makes it reproducible, but on a small set a few points shouldn't be over-read.
