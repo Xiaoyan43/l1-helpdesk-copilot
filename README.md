@@ -2,6 +2,8 @@
 
 ![CI](https://github.com/Xiaoyan43/l1-helpdesk-copilot/actions/workflows/ci.yml/badge.svg)
 
+![Service Desk workspace — ticket queue with SLA risk and lifecycle filters](docs/img/workspace-hero.png)
+
 > ⚠️ **Personal portfolio / lab only — not a production system.**
 > All LLM calls go to the Anthropic API; all Microsoft Graph calls target a **free, isolated
 > Microsoft Entra lab tenant**, default `GRAPH_DRY_RUN=true` (simulate, don't modify the tenant).

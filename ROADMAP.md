@@ -10,7 +10,7 @@ This is a portfolio/lab MVP — keep changes scoped; flag scope creep.
 
 ## ⭐ Suggested next 3 (best portfolio ROf)
 1. ~~**Tests + CI**~~ — **done:** pytest (classifier baseline, KB retrieval, Graph dry-run, audit redaction) + GitHub Actions (`ruff` + pytest) + README badge. [high][M]
-2. **README hero screenshot** — save a UI screenshot to `docs/img/` and embed at the top of README. Instant repo polish. [med][S]
+2. ~~**README hero screenshot**~~ — **done:** `docs/img/workspace-hero.png` embedded at the top of README (queue view with SLA + lifecycle chips). [med][S]
 3. **Grow + clean the eval set** — expand KB to ~10–12 articles and re-clean `kb_hit` gold labels (the noisiest field); optionally grow the test set past 50. Lifts the weakest honest metric and improves RAG. [high][M]
 
 ## Quality / accuracy
