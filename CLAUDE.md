@@ -13,7 +13,7 @@ An IT Support (L1 / Help Desk) **portfolio / lab** project (not production). It'
 priority / impact / urgency / incident-vs-request / KB hit) → **RAG** over a markdown KB → cited L1
 reply → for account requests, **Microsoft Graph** actions on a free lab Entra tenant (default
 dry-run), recorded on the timeline. Plus a confidence guardrail, human-in-the-loop feedback, and a
-50-ticket eval harness.
+60-ticket eval harness.
 
 - **Repo:** https://github.com/Xiaoyan43/l1-helpdesk-copilot (public)
 - **Live demo:** https://l1-helpdesk-copilot.onrender.com (public, **mock mode**)
@@ -28,7 +28,7 @@ cp .env.example .env            # optional; runs fine with no keys (mock + dry-r
 # run (UI at http://127.0.0.1:8000/, API docs at /docs)
 uvicorn app.main:app --reload
 
-# eval (baseline vs Claude on the 50-ticket labelled set)
+# eval (baseline vs Claude on the 60-ticket labelled set)
 python -m eval.run_eval --engine both --show-errors
 
 # optional: upgrade retrieval to semantic embeddings (heavy, pulls torch)
@@ -53,8 +53,8 @@ app/
   graph_actions.py Microsoft Graph: create_user/reset_password/add_to_group/assign_license (dry-run gate, password redaction)
   audit.py         append-only audit_log.jsonl (gitignored) — global cross-ticket record
   static/index.html  single-page workspace UI: queue + ticket detail + intake (English, vanilla JS)
-kb/                6 markdown KB articles (KB001..KB006)
-data/sample_tickets.csv   50 hand-labelled tickets (gold_* columns) — also seeds the ticket queue
+kb/                12 markdown KB articles (KB001..KB012)
+data/sample_tickets.csv   60 hand-labelled tickets (gold_* columns) — also seeds the ticket queue
 eval/run_eval.py   per-field accuracy + macro-F1; writes eval/last_results.json (gitignored)
 docs/              m365-setup.md, pitch.md (CN), demo-script.md (CN)
 render.yaml        Render blueprint (mock demo)
@@ -67,7 +67,7 @@ render.yaml        Render blueprint (mock demo)
 - **Retrieval:** BM25 (`rank-bm25`) by default; installing `requirements-rag.txt` auto-upgrades to embeddings. KB hit (classifier field) is independent of BM25 retrieval.
 - **Graph password reset** needs the app's service principal to hold the **User Administrator** directory role (Graph perms alone give 403). Right after creating a user, reset-by-UPN can 404 (replication lag) — use the object id.
 - **Ticket store (`store.py`, SQLite at `tickets.db`, gitignored):** built at import in `main.py` (`init_db()` + `seed_if_empty()`). Seeding uses **`rule_based_classify` directly** (not `classify()`) so first-run/startup never burns the API even when a real key is configured; created_at is back-dated per ticket so SLA risk is a deliberate mix (~50% on-track / 33% at-risk / 17% breached). To get a fresh demo queue, just delete `tickets.db` and restart.
-- **Eval continuity:** the classifier still predicts `priority` directly — `impact`/`urgency` are *added* fields. The ITIL **Impact×Urgency→Priority** matrix (`sla.priority_from_matrix`) is shown in the UI as a cross-check only; it does **not** drive the stored priority or eval. So the documented eval numbers are unchanged (re-verified: baseline still category 80 / priority 54 / ticket_type 84 / kb_hit 60 / macro-F1 61).
+- **Eval continuity:** the classifier still predicts `priority` directly — `impact`/`urgency` are *added* fields. The ITIL **Impact×Urgency→Priority** matrix (`sla.priority_from_matrix`) is shown in the UI as a cross-check only; it does **not** drive the stored priority or eval. Eval set is now **60 tickets** with re-cleaned `kb_hit` gold labels and KB007–KB012 added (see README eval table).
 - **Two logs, two jobs:** per-ticket **timeline** lives in SQLite (`ticket_events`); the global **`audit_log.jsonl`** stays the cross-ticket record. Lifecycle mutations write to both. Graph actions accept an optional `ticket_id` to also land on that ticket's timeline.
 - **venv** lives at `.venv/`.
 
@@ -77,9 +77,9 @@ render.yaml        Render blueprint (mock demo)
 - **Lab only:** Graph targets a free, isolated Entra tenant; sample tickets only. Never claim production / real users.
 - **The public Render demo runs in mock mode.** The eval numbers below come from the **offline eval + a lab tenant**, NOT the public demo. Don't imply the demo runs Claude or touches a real tenant.
 
-## Eval numbers (reproducible, temperature=0; 50-ticket labelled set)
-Keyword baseline → Claude (Haiku 4.5): category **80→92%**, incident-vs-request **84→98%**,
-priority **54→74%** (after rubric + few-shot calibration), kb_hit **60→72%**, macro-F1 **61→81%**.
+## Eval numbers (reproducible, temperature=0; 60-ticket labelled set)
+Keyword baseline → Claude (Haiku 4.5): category **82→85%**, incident-vs-request **82→98%**,
+priority **57→78%**, kb_hit **52→87%** (gold re-cleaned + KB expanded), macro-F1 **71→85%**.
 Graph live-verified on lab tenant: `create_user 201`, `reset_password 204`, `add_to_group 204`.
 
 ## Working efficiently here (for the agent)

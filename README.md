@@ -29,7 +29,7 @@ from a KB, and (for account requests) executes Microsoft Graph actions in a lab 
 5. **Execute (Microsoft Graph, lab tenant)** — create user / reset password / add to group / assign license,
    tied back to the originating ticket.
 6. **Audit + timeline** — a per-ticket timeline (SQLite) plus a global append-only `audit_log.jsonl`.
-7. **Eval** — score the classifier on 50 labeled tickets to get an honest accuracy number.
+7. **Eval** — score the classifier on 60 labeled tickets to get an honest accuracy number.
 
 ## Service Desk workspace
 The single-page UI (`/`) is a two-view workspace, not just an AI box:
@@ -40,7 +40,7 @@ The single-page UI (`/`) is a two-view workspace, not just an AI box:
   controls (escalate with reason + team, resolve with a resolution code), the suggested Graph action
   (behind the confidence guardrail), and a live **timeline** of everything that happened to the ticket.
 
-Seeded from the 50 sample tickets on first run, so the queue is populated and the SLA colors are live
+Seeded from the 60 sample tickets on first run, so the queue is populated and the SLA colors are live
 immediately — fully offline (rule baseline), no API key required.
 
 ## Tech stack
@@ -62,16 +62,17 @@ offline demo, and the baseline the Claude classifier is measured against. Set `A
 and `USE_MOCK_LLM=false` to use Claude.
 
 ## Eval results
-On **50 hand-labeled tickets**, rule baseline (keyword counts) vs. Claude (Haiku 4.5, strict
-structured output, `temperature=0` for reproducibility):
+On **60 hand-labeled tickets** (expanded from 50; `kb_hit` gold labels re-cleaned with a consistent
+NONE-vs-article rule), rule baseline (keyword counts) vs. Claude (Haiku 4.5, strict structured
+output, `temperature=0` for reproducibility):
 
 | Field | Keyword baseline | Claude | Δ |
 |---|---|---|---|
-| category | 80% | **92%** | +12 |
-| incident vs request | 84% | **98%** | +14 |
-| priority | 54% | **74%** | +20 |
-| kb_hit | 60% | **72%** | +12 |
-| category macro-F1 | 61% | **81%** | +20 |
+| category | 82% | **85%** | +3 |
+| incident vs request | 82% | **98%** | +17 |
+| priority | 57% | **78%** | +22 |
+| kb_hit | 52% | **87%** | +35 |
+| category macro-F1 | 71% | **85%** | +14 |
 
 Reproduce: `python -m eval.run_eval --engine both --show-errors`
 
@@ -84,9 +85,9 @@ ruff check .
 CI runs ruff + pytest on every push/PR to `main` (see [`.github/workflows/ci.yml`](.github/workflows/ci.yml)).
 
 **Honest notes / limitations:**
-- The test set is only **50 tickets, single-annotator** — for a portfolio demo, not a rigorous benchmark; `temperature=0` makes it reproducible, but on a small set a few points shouldn't be over-read.
-- **priority** started at 54% (tied with the baseline). Root cause: the prompt's rubric disagreed with the labels. After tightening the rubric and adding few-shot calibration, it rose to 74%. Priority is inherently subjective.
-- **kb_hit** is the noisiest label: ~11/14 "errors" are "I labeled NONE, Claude picked a reasonable KB" — a labeling-convention disagreement, not a model error.
+- The test set is **60 tickets, single-annotator** — for a portfolio demo, not a rigorous benchmark; `temperature=0` makes it reproducible, but on a small set a few points shouldn't be over-read.
+- **kb_hit** labels were re-cleaned (⭐3): assign a KB id only when an article's L1 steps directly apply; NONE for offboarding, HR/process, or LOB outages. Claude kb_hit rose from 72% (old 50-set) to **87%** on the expanded set — partly cleaner gold, partly six new articles (KB007–KB012).
+- **priority** is inherently subjective; the prompt rubric + few-shot calibration helps but won't match every annotator.
 - KB retrieval (BM25) is **independent** of the classifier's kb_hit field — even when the classifier is wrong, retrieval often still cites the right article.
 
 ## Microsoft Graph — live-verified
@@ -100,7 +101,7 @@ free tenant has no paid SKUs. Setup: [`docs/m365-setup.md`](docs/m365-setup.md).
 - [x] Phase 0 · Scaffold (config / models / runnable FastAPI + rule baseline)
 - [x] Phase 1 · Claude structured classification + CSV ingest
 - [x] Phase 2 · KB + RAG citation-grounded reply
-- [x] Phase 3 · 50-ticket labeled test set + eval script (`python -m eval.run_eval`)
+- [x] Phase 3 · 60-ticket labeled test set + eval script (`python -m eval.run_eval`)
 - [x] Phase 4 · Microsoft Graph account actions + audit log (live-verified, see above)
 - [x] Phase 5 · Minimal single-page UI (`/`): triage + cited reply + suggested action + audit panel
 - [x] Phase 6 · **Service Desk workspace** — SQLite ticket store + queue/detail UI, status lifecycle

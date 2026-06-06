@@ -11,11 +11,11 @@ This is a portfolio/lab MVP — keep changes scoped; flag scope creep.
 ## ⭐ Suggested next 3 (best portfolio ROf)
 1. ~~**Tests + CI**~~ — **done:** pytest (classifier baseline, KB retrieval, Graph dry-run, audit redaction) + GitHub Actions (`ruff` + pytest) + README badge. [high][M]
 2. ~~**README hero screenshot**~~ — **done:** `docs/img/workspace-hero.png` embedded at the top of README (queue view with SLA + lifecycle chips). [med][S]
-3. **Grow + clean the eval set** — expand KB to ~10–12 articles and re-clean `kb_hit` gold labels (the noisiest field); optionally grow the test set past 50. Lifts the weakest honest metric and improves RAG. [high][M]
+3. ~~**Grow + clean the eval set**~~ — **done:** KB expanded to 12 articles (KB007–KB012); `kb_hit` gold labels re-cleaned; eval set grown to 60 tickets. Claude kb_hit **87%** on re-run. [high][M]
 
 ## Quality / accuracy
-- [ ] Expand KB to 10–12 articles (cover shared-drive/permissions, MFA reset, device perf, license/activation). [med][M]
-- [ ] Re-clean `kb_hit` gold labels for a consistent NONE-vs-article rule. [med][S]
+- [x] Expand KB to 10–12 articles (cover shared-drive/permissions, MFA reset, device perf, license/activation). [med][M]
+- [x] Re-clean `kb_hit` gold labels for a consistent NONE-vs-article rule. [med][S]
 - [ ] Category few-shot calibration — **use fresh examples, NOT test-set tickets** (avoid overfitting the 50-set). [med][S]
 - [ ] Try a stronger classify model (sonnet/opus) and report cost↔accuracy trade-off. [low][S]
 - [ ] Per-category precision/recall table in eval output; consider bootstrap CIs. [med][M]

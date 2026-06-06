@@ -27,6 +27,12 @@ KB_CATALOG: dict[str, str] = {
     "KB004": "Software install & licensing",
     "KB005": "Hardware (laptop / monitor / printer / peripherals)",
     "KB006": "Security: phishing & suspicious activity",
+    "KB007": "Shared drives & file permissions",
+    "KB008": "MFA & Microsoft Authenticator setup",
+    "KB009": "Slow laptop / device performance",
+    "KB010": "New hire & contractor onboarding",
+    "KB011": "BitLocker recovery key",
+    "KB012": "Common application issues (Teams, Zoom, crashes)",
 }
 
 # --- 关键词表（规则基线用，刻意保持简单） ---
@@ -196,7 +202,9 @@ _SYSTEM_TEMPLATE = (
     "business app; high = a whole department/site or a business-critical system.\n"
     "- urgency: low = routine / no deadline; medium = work is degraded; high = user is "
     "blocked now or there is a hard deadline.\n\n"
-    "Set kb_hit to the single best-matching KB id, or 'NONE' if no article fits.\n\n"
+    "Set kb_hit to the single best-matching KB id, or 'NONE' if no article fits.\n"
+    "Use NONE for offboarding-only requests, HR/process questions, or line-of-business outages "
+    "with no matching article — do not force a tangential KB.\n\n"
     "Knowledge base:\n{catalog}"
 )
 

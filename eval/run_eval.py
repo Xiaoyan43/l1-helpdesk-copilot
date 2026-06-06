@@ -6,7 +6,8 @@
     python -m eval.run_eval --engine both          # 两者对比（默认）
     python -m eval.run_eval --engine both --show-errors
 
-诚实声明：测试集仅 ~50 条、单人标注，数字仅供作品演示，非生产评测。
+诚实声明：测试集 60 条、单人标注，数字仅供作品演示，非生产评测。
+gold_kb_hit 规则：有文章 L1 步骤可直接处理 → 填 KB id；离boarding/HR/LOB  outage 等无文章 → 空（评测时归一化为 NONE）。
 """
 import argparse
 import json
