@@ -29,7 +29,7 @@ This is a portfolio/lab MVP — keep changes scoped; flag scope creep.
 ## Features
 - [x] Streaming reply in the UI (Claude streaming, token-by-token). [med][M]
 - [ ] More Graph actions: disable/offboard user, list group members, set manager; assign_license on a licensed trial tenant. [med][M]
-- [ ] Smarter suggested-action auto-fill (parse "new hire Maria Chen" → prefill create_user fields). [low][S]
+- [x] Smarter suggested-action auto-fill (parse "new hire Maria Chen" → prefill create_user fields). [low][S]
 - [ ] Batch view: CSV upload → results table in the UI. [low][M]
 - [x] Persist audit to SQLite/Postgres for the deployed version (jsonl is ephemeral on Render). [med][M]
 

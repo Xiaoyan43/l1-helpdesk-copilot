@@ -467,6 +467,49 @@ async function createTicket(){
 }
 
 // ---------- Graph account action ----------
+function emailDomain(t){
+  const req = (t && t.requester) || "";
+  if (req.includes("@")) return req.split("@").pop().toLowerCase();
+  return "labtenant.onmicrosoft.com";
+}
+function titleCaseName(s){
+  return s.trim().split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
+}
+function parsePersonName(text){
+  const patterns = [
+    /new hire[,\s]+([A-Z][a-z]+(?:\s+[A-Z][a-z'-]+)+)/,
+    /(?:for|named|called)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z'-]+)+)/,
+    /([A-Z][a-z]+(?:\s+[A-Z][a-z'-]+)+)\s+(?:starting|joins|onboard)/,
+    /setup\s*[-–—]\s*([A-Z][a-z]+(?:\s+[A-Z][a-z'-]+)+)/,
+    /-\s*([A-Z][a-z]+(?:\s+[A-Z][a-z'-]+)+)\s*$/,
+  ];
+  for (const p of patterns){
+    const m = text.match(p);
+    if (m) return titleCaseName(m[1]);
+  }
+  return "";
+}
+function parseCreateUserFields(t){
+  const text = `${t.subject||""} ${t.body||""}`;
+  const display = parsePersonName(text);
+  if (!display) return {};
+  const local = display.toLowerCase().replace(/[^a-z0-9]+/g, ".");
+  return { display_name: display, user_principal_name: `${local}@${emailDomain(t)}` };
+}
+function parseResetUser(t){
+  const text = `${t.subject||""} ${t.body||""}`;
+  const upn = text.match(/([a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,})/i);
+  if (upn) return upn[1].toLowerCase();
+  if (t.requester && t.requester.includes("@")) return t.requester;
+  return "";
+}
+function fieldDefaults(t, act){
+  t = t || {};
+  if (act === "create_user") return parseCreateUserFields(t);
+  if (act === "reset_password"){ const u = parseResetUser(t); return u ? { user: u } : {}; }
+  if (act === "assign_license" && t.requester) return { user: t.requester };
+  return {};
+}
 function applySuggestion(t){
   const text = ((t.subject||"")+" "+(t.body||"")).toLowerCase();
   let act = null;
@@ -474,16 +517,21 @@ function applySuggestion(t){
   else if (/reset|forgot.*password|locked|unlock/.test(text)) act="reset_password";
   else if (/add .* to|distribution|shared mailbox|join .* group|members? to/.test(text)) act="add_to_group";
   else if (/licen[sc]e/.test(text)) act="assign_license";
-  if (act){ $("actType").value = act; $("suggest").innerHTML = `Suggested: <b>${act}</b> (from triage ${t.category}/${t.ticket_type})`; }
-  else $("suggest").textContent = "This ticket doesn't look like an automatable account action.";
+  if (act){
+    $("actType").value = act;
+    const parsed = act === "create_user" ? parseCreateUserFields(t) : {};
+    const hint = parsed.display_name ? ` — pre-filled <b>${esc(parsed.display_name)}</b>` : "";
+    $("suggest").innerHTML = `Suggested: <b>${act}</b> (from triage ${t.category}/${t.ticket_type})${hint}`;
+  } else $("suggest").textContent = "This ticket doesn't look like an automatable account action.";
   renderFields(t);
 }
 function renderFields(t){
   t = t || cur || {};
   const act = $("actType").value;
+  const defaults = fieldDefaults(t, act);
   $("fields").innerHTML = FIELDS[act].map(([k,lab,ph])=>{
-    let v = "";
-    if ((k==="user"||k==="user_principal_name") && t.requester) v = t.requester;
+    let v = defaults[k] || "";
+    if (!v && (k==="user"||k==="user_principal_name") && t.requester) v = t.requester;
     return `<label>${lab}</label><input id="f_${k}" value="${esc(v)}" placeholder="${ph}" />`;
   }).join("");
   updateGuardrail();
