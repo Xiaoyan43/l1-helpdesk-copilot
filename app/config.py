@@ -24,8 +24,7 @@ class Settings(BaseSettings):
     # --- 护栏 / 路径 ---
     action_confidence_threshold: float = 0.7  # 分类置信度低于此值，UI 拦截真实动作待人工复核
     kb_dir: str = "kb"
-    audit_log_path: str = "audit_log.jsonl"
-    tickets_db_path: str = "tickets.db"   # SQLite 工单库（gitignored）
+    tickets_db_path: str = "tickets.db"   # SQLite 工单库 + audit_events（gitignored）
 
     @classmethod
     def settings_customise_sources(

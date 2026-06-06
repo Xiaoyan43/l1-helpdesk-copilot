@@ -184,7 +184,7 @@ class ActionResult(BaseModel):
 
 # --- 工单状态机 / 持久化记录 / 时间线 ---
 class TimelineEvent(BaseModel):
-    """工单自身历史里的一条事件（区别于全局 audit_log.jsonl）。"""
+    """工单自身历史里的一条事件（区别于全局 audit_events 表）。"""
     ts: str
     type: str            # created | triaged | status_change | comment | escalated | resolved | graph_action | reply_drafted | feedback
     actor: str = "L1 Agent"

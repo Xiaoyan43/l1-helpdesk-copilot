@@ -1,7 +1,7 @@
 """SQLite 工单库：持久化工单 + 每工单时间线（timeline）。
 
-和全局 audit_log.jsonl 分工不同：
-- audit_log.jsonl（见 audit.py）= 跨工单的横切记录（分类 / Graph 动作 / 反馈）。
+和全局 audit_events 表分工不同：
+- audit_events（见 audit.py，同 tickets.db）= 跨工单的横切记录（分类 / Graph 动作 / 反馈）。
 - 这里的 ticket_events = 每张工单自己的历史，详情页时间线用。
 
 零额外依赖（标准库 sqlite3）。每次调用开/关一个连接：FastAPI 同步路由跑在线程池里，

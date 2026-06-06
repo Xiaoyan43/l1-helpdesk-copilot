@@ -28,7 +28,7 @@ from a KB, and (for account requests) executes Microsoft Graph actions in a lab 
    each recorded on the ticket's **timeline**.
 5. **Execute (Microsoft Graph, lab tenant)** — create user / reset password / add to group / assign license,
    tied back to the originating ticket.
-6. **Audit + timeline** — a per-ticket timeline (SQLite) plus a global append-only `audit_log.jsonl`.
+6. **Audit + timeline** — a per-ticket timeline (SQLite) plus a global audit log in the same DB (`audit_events`).
 7. **Eval** — score the classifier on 60 labeled tickets to get an honest accuracy number.
 
 ## Service Desk workspace

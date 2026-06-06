@@ -169,6 +169,16 @@
       <div class="tl" id="timeline"></div>
     </div>
   </div>
+  <div class="full">
+    <div class="card">
+      <h2>Audit log <span class="mut">(global, SQLite)</span></h2>
+      <div class="row" style="margin-bottom:8px">
+        <button class="sec sm" onclick="loadAudit()">Refresh</button>
+        <span id="auditMsg" class="mut"></span>
+      </div>
+      <pre id="auditLog" class="mut" style="max-height:240px">Loading…</pre>
+    </div>
+  </div>
 </div>
 
 <!-- ============ INTAKE ============ -->
@@ -297,6 +307,7 @@ async function openDetail(id){
   cur = await (await fetch("/tickets/"+id)).json();
   resetPanels();      // clear AI output / form fields — only when switching tickets
   renderDetail();
+  loadAudit();
   show("detailView");
   window.scrollTo(0,0);
 }
@@ -502,6 +513,21 @@ async function execAction(){
     <div class="mut" style="margin-top:6px">Graph request:</div>
     <pre>${esc(JSON.stringify(r.request, null, 2))}</pre>`;
   refresh();   // graph_action now on timeline
+  loadAudit();
+}
+
+async function loadAudit(){
+  $("auditMsg").textContent = "";
+  try {
+    const events = await (await fetch("/audit?limit=30")).json();
+    if (!events.length){ $("auditLog").textContent = "No audit events yet."; return; }
+    $("auditLog").textContent = events.map(e => {
+      const {ts, kind, ...rest} = e;
+      return `${fmtTs(ts)}  [${kind}]  ${JSON.stringify(rest)}`;
+    }).join("\n");
+  } catch (err) {
+    $("auditMsg").innerHTML = `<span class="warn">${esc(String(err))}</span>`;
+  }
 }
 
 // ---------- init ----------

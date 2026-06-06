@@ -5,7 +5,7 @@
 **Source of truth:** read **[`CLAUDE.md`](CLAUDE.md)** (project memory — architecture, conventions, status) and **[`ROADMAP.md`](ROADMAP.md)** (upgrade backlog) before starting any task, then follow them. Update `ROADMAP.md` as you ship.
 
 ## Hard guardrails (do not break)
-- **Never commit secrets.** `.env`, `audit_log.jsonl`, `tickets.db*`, `.venv/`, `eval/last_results.json` are gitignored — verify nothing sensitive is staged before any push.
+- **Never commit secrets.** `.env`, `tickets.db*`, `.venv/`, `eval/last_results.json` are gitignored — verify nothing sensitive is staged before any push.
 - **Safe defaults:** mock LLM + Microsoft Graph **dry-run**. Lab Entra tenant + sample data only — **never claim production / real users**.
 - **Passwords never enter the audit log.**
 - Keep changes **scoped** (portfolio MVP); flag scope creep; **push only when asked**.

@@ -31,7 +31,7 @@ This is a portfolio/lab MVP — keep changes scoped; flag scope creep.
 - [ ] More Graph actions: disable/offboard user, list group members, set manager; assign_license on a licensed trial tenant. [med][M]
 - [ ] Smarter suggested-action auto-fill (parse "new hire Maria Chen" → prefill create_user fields). [low][S]
 - [ ] Batch view: CSV upload → results table in the UI. [low][M]
-- [ ] Persist audit to SQLite/Postgres for the deployed version (jsonl is ephemeral on Render). [med][M]
+- [x] Persist audit to SQLite/Postgres for the deployed version (jsonl is ephemeral on Render). [med][M]
 
 ## Engineering / hardening
 - [x] pytest suite (rule baseline, retriever, graph dry-run + redaction, audit). [high][M]

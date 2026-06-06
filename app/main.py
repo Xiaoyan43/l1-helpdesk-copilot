@@ -7,7 +7,7 @@ from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import HTMLResponse, StreamingResponse
 
 from . import store
-from .audit import log_event, read_events
+from .audit import init_audit_db, log_event, read_events
 from .classifier import classify
 from .config import get_settings
 from .data_io import load_tickets_csv, parse_tickets_bytes
@@ -52,6 +52,7 @@ app = FastAPI(
 
 # 启动即建表并铺底（首启把 50 条样本工单填进队列）。规则基线 seeding，不烧 API。
 store.init_db()
+init_audit_db()
 store.seed_if_empty()
 
 
