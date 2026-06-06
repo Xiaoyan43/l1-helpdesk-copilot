@@ -1,9 +1,10 @@
 """FastAPI 入口。分类 + RAG 回复 + Graph 动作 + 工单生命周期 + 审计 + 单页 UI。"""
+import json
 from datetime import datetime, timezone
 from pathlib import Path
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, StreamingResponse
 
 from . import store
 from .audit import log_event, read_events
@@ -41,7 +42,7 @@ from .models import (
     TriageItem,
     TriageResult,
 )
-from .responder import generate_reply
+from .responder import generate_reply, reply_source, stream_reply
 
 app = FastAPI(
     title="L1 HelpDesk Copilot (lab / portfolio)",
@@ -68,13 +69,30 @@ def _require(ticket_id: str) -> StoredTicket:
     return t
 
 
-def _draft(ticket: Ticket, cl: Classification, k: int = 2):
-    """检索 top-k KB 并起草回复（/respond 与 /tickets/{id}/respond 共用）。"""
+def _retrieve(ticket: Ticket, k: int = 2):
+    """Retrieve top-k KB hits for a ticket."""
     retriever = get_retriever()
     hits = retriever.search(f"{ticket.subject} {ticket.body}", k=k)
-    reply = generate_reply(ticket, cl, [a for a, _ in hits])
     citations = [Citation(id=a.id, title=a.title, score=round(s, 3)) for a, s in hits]
-    return citations, reply, retriever.mode
+    return citations, [a for a, _ in hits], retriever.mode
+
+
+def _draft(ticket: Ticket, cl: Classification, k: int = 2):
+    """检索 top-k KB 并起草回复（/respond 与 /tickets/{id}/respond 共用）。"""
+    citations, articles, mode = _retrieve(ticket, k)
+    reply = generate_reply(ticket, cl, articles)
+    return citations, reply, mode
+
+
+def _ticket_classification(t: StoredTicket) -> Classification:
+    return Classification(
+        category=t.category, priority=t.priority, ticket_type=t.ticket_type,
+        impact=t.impact, urgency=t.urgency, kb_hit=t.kb_hit, confidence=t.confidence,
+    )
+
+
+def _sse(payload: dict) -> str:
+    return f"data: {json.dumps(payload, ensure_ascii=False)}\n\n"
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -142,10 +160,7 @@ def respond_ticket(ticket_id: str, k: int = 2) -> TriageResult:
     """Draft a cited L1 reply for a stored ticket (uses its stored triage)."""
     t = _require(ticket_id)
     ticket = Ticket(id=t.id, subject=t.subject, body=t.body, requester=t.requester)
-    cl = Classification(
-        category=t.category, priority=t.priority, ticket_type=t.ticket_type,
-        impact=t.impact, urgency=t.urgency, kb_hit=t.kb_hit, confidence=t.confidence,
-    )
+    cl = _ticket_classification(t)
     citations, reply, mode = _draft(ticket, cl, k)
     store.add_event(
         ticket_id, "reply_drafted",
@@ -154,6 +169,43 @@ def respond_ticket(ticket_id: str, k: int = 2) -> TriageResult:
     )
     return TriageResult(ticket=ticket, classification=cl, citations=citations,
                         reply=reply, retriever_mode=mode)
+
+
+@app.post("/tickets/{ticket_id}/respond/stream")
+def respond_ticket_stream(ticket_id: str, k: int = 2) -> StreamingResponse:
+    """Stream a cited L1 reply as Server-Sent Events (token chunks + final metadata)."""
+    t = _require(ticket_id)
+    ticket = Ticket(id=t.id, subject=t.subject, body=t.body, requester=t.requester)
+    cl = _ticket_classification(t)
+    citations, articles, mode = _retrieve(ticket, k)
+    source = reply_source()
+    cited_kb = [a.id for a in articles]
+
+    def gen():
+        parts: list[str] = []
+        yield _sse({
+            "type": "meta",
+            "citations": [c.model_dump() for c in citations],
+            "retriever_mode": mode,
+            "source": source,
+        })
+        for chunk in stream_reply(ticket, cl, articles):
+            parts.append(chunk)
+            yield _sse({"type": "token", "text": chunk})
+        full = "".join(parts)
+        store.add_event(
+            ticket_id, "reply_drafted",
+            f"Drafted L1 reply ({source}, streamed); cited {', '.join(cited_kb) or 'none'}",
+            actor="L1 Agent",
+        )
+        yield _sse({
+            "type": "done",
+            "reply_text": full,
+            "cited_kb": cited_kb,
+            "source": source,
+        })
+
+    return StreamingResponse(gen(), media_type="text/event-stream")
 
 
 @app.post("/tickets/{ticket_id}/status", response_model=StoredTicket)

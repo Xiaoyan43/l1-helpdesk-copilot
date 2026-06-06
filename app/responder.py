@@ -5,6 +5,7 @@
 严格约束：只依据提供的 KB 内容作答，不要编造步骤。
 """
 import re
+from collections.abc import Iterator
 
 from .classifier import _get_client
 from .config import get_settings
@@ -56,6 +57,21 @@ def _mock_reply(ticket: Ticket, cl: Classification, articles: list[Article]) -> 
     )
 
 
+def _user_message(ticket: Ticket, cl: Classification, articles: list[Article]) -> str:
+    return (
+        f"Ticket subject: {ticket.subject}\n"
+        f"Ticket body: {ticket.body}\n"
+        f"Requester: {ticket.requester or 'unknown'}\n"
+        f"Triage: {cl.category.value} / {cl.priority.value} / {cl.ticket_type.value}\n\n"
+        f"Knowledge base context:\n{_context(articles)}"
+    )
+
+
+def reply_source() -> str:
+    s = get_settings()
+    return "mock" if s.use_mock_llm or not s.anthropic_api_key else "claude"
+
+
 def generate_reply(
     ticket: Ticket, cl: Classification, articles: list[Article]
 ) -> Reply:
@@ -63,18 +79,31 @@ def generate_reply(
     if s.use_mock_llm or not s.anthropic_api_key:
         return _mock_reply(ticket, cl, articles)
 
-    user = (
-        f"Ticket subject: {ticket.subject}\n"
-        f"Ticket body: {ticket.body}\n"
-        f"Requester: {ticket.requester or 'unknown'}\n"
-        f"Triage: {cl.category.value} / {cl.priority.value} / {cl.ticket_type.value}\n\n"
-        f"Knowledge base context:\n{_context(articles)}"
-    )
     resp = _get_client().messages.create(
         model=s.respond_model,
         max_tokens=600,
         system=_SYSTEM,
-        messages=[{"role": "user", "content": user}],
+        messages=[{"role": "user", "content": _user_message(ticket, cl, articles)}],
     )
     text = "".join(b.text for b in resp.content if b.type == "text").strip()
     return Reply(reply_text=text, cited_kb=[a.id for a in articles], source="claude")
+
+
+def stream_reply(
+    ticket: Ticket, cl: Classification, articles: list[Article]
+) -> Iterator[str]:
+    """Yield reply text chunks (Claude streaming, or word-chunked mock)."""
+    s = get_settings()
+    if s.use_mock_llm or not s.anthropic_api_key:
+        text = _mock_reply(ticket, cl, articles).reply_text
+        for i, word in enumerate(text.split()):
+            yield word if i == 0 else " " + word
+        return
+
+    with _get_client().messages.stream(
+        model=s.respond_model,
+        max_tokens=600,
+        system=_SYSTEM,
+        messages=[{"role": "user", "content": _user_message(ticket, cl, articles)}],
+    ) as stream:
+        yield from stream.text_stream

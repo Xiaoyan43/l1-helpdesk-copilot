@@ -371,15 +371,38 @@ function renderClsLine(t){
 }
 async function draftReply(){
   $("aiMsg").textContent="Drafting…";
-  const r = await (await fetch(`/tickets/${cur.id}/respond`, {method:"POST"})).json();
-  $("aiMsg").textContent="";
-  await refresh();   // re-render (reply_drafted now on timeline) before populating the panel
-  const cites = (r.citations||[]).map(x=>`<span class="pill">${x.id} · ${esc(x.title)} <span class="mut">(${x.score})</span></span>`).join(" ");
-  $("aiCls").innerHTML = (cites ? `<div class="mut" style="margin-bottom:4px">retrieval (${r.retriever_mode}): ${cites}</div>` : "") + $("aiCls").innerHTML;
   $("aiReplyWrap").classList.remove("hide");
-  $("replySrc").textContent = "("+r.reply.source+")";
-  $("aiReply").textContent = r.reply.reply_text;
+  $("aiReply").textContent = "";
+  $("replySrc").textContent = "(streaming…)";
   $("fbMsg").textContent="";
+
+  const resp = await fetch(`/tickets/${cur.id}/respond/stream`, {method:"POST"});
+  if (!resp.ok){ $("aiMsg").textContent="Draft failed"; return; }
+
+  const reader = resp.body.getReader();
+  const decoder = new TextDecoder();
+  let buf = "";
+  while (true){
+    const {done, value} = await reader.read();
+    if (done) break;
+    buf += decoder.decode(value, {stream:true});
+    const blocks = buf.split("\n\n");
+    buf = blocks.pop() || "";
+    for (const block of blocks){
+      if (!block.startsWith("data: ")) continue;
+      const ev = JSON.parse(block.slice(6));
+      if (ev.type === "meta"){
+        const cites = (ev.citations||[]).map(x=>`<span class="pill">${x.id} · ${esc(x.title)} <span class="mut">(${x.score})</span></span>`).join(" ");
+        if (cites) $("aiCls").innerHTML = `<div class="mut" style="margin-bottom:4px">retrieval (${ev.retriever_mode}): ${cites}</div>` + $("aiCls").innerHTML;
+      } else if (ev.type === "token"){
+        $("aiReply").textContent += ev.text;
+      } else if (ev.type === "done"){
+        $("replySrc").textContent = "("+ev.source+")";
+      }
+    }
+  }
+  $("aiMsg").textContent="";
+  await refresh();
 }
 async function sendFeedback(status){
   await fetch("/feedback", {method:"POST", headers:{"Content-Type":"application/json"},

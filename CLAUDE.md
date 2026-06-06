@@ -39,7 +39,7 @@ Deploy: `render.yaml` blueprint runs the public **mock** demo (free tier). No te
 ## Architecture (file map)
 ```
 app/
-  main.py          FastAPI routes: UI "/", /tickets (+ /{id}, /triage, /respond, /status, /escalate,
+  main.py          FastAPI routes: UI "/", /tickets (+ /{id}, /triage, /respond, /respond/stream, /status, /escalate,
                    /resolve, /comment), /classify, /respond, /actions/*, /graph/*, /audit, /feedback, /healthz
   config.py        pydantic-settings; .env-first source order; defaults = mock + dry-run; tickets_db_path
   models.py        pydantic schemas (Ticket, Classification[+impact/urgency], StoredTicket, TimelineEvent,
@@ -49,7 +49,7 @@ app/
   store.py         SQLite ticket store + per-ticket timeline; seed_if_empty() seeds the queue from the CSV
   sla.py           SLA_TARGETS per priority, due_dates(), sla_risk(), priority_from_matrix() (Impact×Urgency)
   kb.py            KB loader + Retriever (sentence-transformers if installed, else BM25 fallback)
-  responder.py     cited L1 reply (Claude; mock template fallback)
+  responder.py     cited L1 reply (Claude streaming via /respond/stream; mock template fallback)
   graph_actions.py Microsoft Graph: create_user/reset_password/add_to_group/assign_license (dry-run gate, password redaction)
   audit.py         append-only audit_log.jsonl (gitignored) — global cross-ticket record
   static/index.html  single-page workspace UI: queue + ticket detail + intake (English, vanilla JS)

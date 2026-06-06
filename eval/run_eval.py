@@ -29,6 +29,24 @@ def _norm_kb(v: str | None) -> str:
     return v if v.startswith("KB") else "NONE"
 
 
+def _category_metrics(per_cat: dict[str, dict[str, int]]) -> dict[str, dict[str, float | int]]:
+    """Per gold category: precision, recall, F1, support (gold count)."""
+    out: dict[str, dict[str, float | int]] = {}
+    for cat in sorted(per_cat):
+        d = per_cat[cat]
+        tp, fp, fn = d["tp"], d["fp"], d["fn"]
+        p = tp / (tp + fp) if tp + fp else 0.0
+        r = tp / (tp + fn) if tp + fn else 0.0
+        f1 = 2 * p * r / (p + r) if p + r else 0.0
+        out[cat] = {
+            "precision": round(p, 3),
+            "recall": round(r, 3),
+            "f1": round(f1, 3),
+            "support": tp + fn,
+        }
+    return out
+
+
 def evaluate(engine: str) -> dict:
     rows = load_labeled_rows()
     classify_fn = rule_based_classify if engine == "baseline" else llm_classify
@@ -64,17 +82,15 @@ def evaluate(engine: str) -> dict:
 
     dt = time.time() - t0
     n = len(rows)
-    f1s = []
-    for d in per_cat.values():
-        p = d["tp"] / (d["tp"] + d["fp"]) if d["tp"] + d["fp"] else 0.0
-        rec = d["tp"] / (d["tp"] + d["fn"]) if d["tp"] + d["fn"] else 0.0
-        f1s.append(2 * p * rec / (p + rec) if p + rec else 0.0)
+    cat_metrics = _category_metrics(per_cat)
+    f1s = [m["f1"] for m in cat_metrics.values()]
     return {
         "engine": engine,
         "n": n,
         "seconds": round(dt, 1),
         "accuracy": {f: round(hits[f] / n, 3) for f in FIELDS},
         "category_macro_f1": round(sum(f1s) / len(f1s), 3) if f1s else 0.0,
+        "category_metrics": cat_metrics,
         "field_errors": field_errors,
         "records": records,
     }
@@ -85,6 +101,12 @@ def _print_report(res: dict, show_errors: bool, fields: list[str] | None = None)
     for f in FIELDS:
         print(f"  {f:12} {res['accuracy'][f]:.0%}")
     print(f"  {'category-F1':12} {res['category_macro_f1']:.0%} (macro)")
+    print("  category per-class (P / R / F1 · support):")
+    for cat, m in res.get("category_metrics", {}).items():
+        print(
+            f"    {cat:16} {m['precision']:.0%} / {m['recall']:.0%} / "
+            f"{m['f1']:.0%} · n={m['support']}"
+        )
     if show_errors:
         for f in (fields or FIELDS):
             errs = res["field_errors"].get(f, [])

@@ -9,7 +9,7 @@
 > Microsoft Entra lab tenant**, default `GRAPH_DRY_RUN=true` (simulate, don't modify the tenant).
 > Do not point this at any real or production credentials or data.
 
-**▶ Live demo:** **https://l1-helpdesk-copilot.onrender.com** — public, **mock mode** (rule-baseline classifier + dry-run Microsoft Graph, no keys; first load may take ~30s to wake on the free tier). The real Claude accuracy numbers are in [Eval results](#eval-results) below.
+**▶ Live demo:** **https://l1-helpdesk-copilot.onrender.com** — public, **mock mode** (rule-baseline classifier + dry-run Microsoft Graph, no keys; first load may take ~30s to wake on the free tier). See [`docs/keep-warm.md`](docs/keep-warm.md) to ping `/healthz` every ~14 min and avoid cold starts. The real Claude accuracy numbers are in [Eval results](#eval-results) below.
 
 An IT Support (L1 / Help Desk) portfolio project built around a real **Service Desk ticket
 lifecycle**: a ticket queue (New → In Progress → Waiting User → Escalated → Resolved) with
